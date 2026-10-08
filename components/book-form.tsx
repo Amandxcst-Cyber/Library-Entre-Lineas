@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import SelectField from "./select-field";
 import { Book, Settings, STATUS_LABELS } from "@/lib/types";
 import { bookSchema } from "@/lib/validation";
+import BookDiscovery from "./book-discovery";
+import { isbn13, type Edition, type Offer } from "@/lib/book-discovery/shared";
 export type BookInput = Omit<Book, "id" | "created_at" | "updated_at">;
 export async function api<T>(
   url: string,
@@ -37,8 +39,13 @@ export default function BookForm({
 }) {
   const [data, setData] = useState<BookInput>(
     book
-      ? (Object.fromEntries(
-          Object.keys(bookSchema.shape).map((k) => [k, book[k as keyof Book]]),
+      ? (bookSchema.parse(
+          Object.fromEntries(
+            Object.keys(bookSchema.shape).map((k) => [
+              k,
+              book[k as keyof Book],
+            ]),
+          ),
         ) as BookInput)
       : {
           title: "",
@@ -56,6 +63,12 @@ export default function BookForm({
           purchase_url: "",
           publisher: "",
           saga: "",
+          isbn: "",
+          edition_format: "",
+          publication_year: null,
+          language: "",
+          translator: "",
+          page_count: null,
         },
   );
   const [price, setPrice] = useState(book?.price?.toString() || ""),
@@ -64,6 +77,32 @@ export default function BookForm({
     [error, setError] = useState("");
   const set = <K extends keyof BookInput>(key: K, value: BookInput[K]) =>
     setData((d) => ({ ...d, [key]: value }));
+  function useEdition(edition: Edition) {
+    setData((d) => ({
+      ...d,
+      title: edition.title,
+      author: edition.author,
+      cover_url: edition.cover,
+      description: edition.description,
+      publisher: edition.publisher,
+      isbn: edition.isbn,
+      edition_format: edition.format,
+      publication_year: edition.year,
+      language: edition.language,
+      translator: edition.translator,
+      page_count: edition.pages,
+      price: null,
+      purchase_url: "",
+    }));
+    setPrice("");
+    toast.success("Datos completados. Revisa la edición antes de guardar.");
+  }
+  function useOffer(offer: Offer) {
+    if (offer.isbn !== isbn13(data.isbn)) return;
+    setPrice(String(offer.price));
+    setData((d) => ({ ...d, price: offer.price, purchase_url: offer.url }));
+    toast.success("Precio y enlace de esta edición seleccionados.");
+  }
   async function upload(file: File | undefined) {
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
@@ -140,6 +179,18 @@ export default function BookForm({
   return (
     <form className="book-form" onSubmit={submit}>
       <div className="form-scroll">
+        {text(
+          "title",
+          "Título o ISBN",
+          "Escribe el libro que estás buscando",
+          true,
+        )}
+        <BookDiscovery
+          query={data.title}
+          initialIsbn={data.isbn}
+          onEdition={useEdition}
+          onOffer={useOffer}
+        />
         <div className="cover-editor">
           <div className="small-cover">
             {data.cover_url ? (
@@ -187,7 +238,6 @@ export default function BookForm({
           </div>
         </div>
         <div className="form-grid">
-          {text("title", "Título", "La próxima historia", true)}
           {text("author", "Autor", "¿Quién la escribió?", true)}
           <SelectField
             label="Género"
@@ -259,6 +309,75 @@ export default function BookForm({
             {text("saga", "Saga", "Vacío si es independiente")}
             {text("purchase_url", "Link de compra", "https://…")}
             {text("cover_url", "O pegar un link de portada", "https://…")}
+            <div className="field">
+              <label htmlFor="book-isbn">ISBN</label>
+              <input
+                id="book-isbn"
+                value={data.isbn}
+                maxLength={30}
+                onChange={(e) => set("isbn", e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="book-format">Formato</label>
+              <input
+                id="book-format"
+                value={data.edition_format}
+                maxLength={80}
+                onChange={(e) => set("edition_format", e.target.value)}
+                placeholder="Tapa dura, bolsillo…"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="book-language">Idioma</label>
+              <input
+                id="book-language"
+                value={data.language}
+                maxLength={40}
+                onChange={(e) => set("language", e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="book-translator">Traducción</label>
+              <input
+                id="book-translator"
+                value={data.translator}
+                maxLength={240}
+                onChange={(e) => set("translator", e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="book-year">Año de publicación</label>
+              <input
+                id="book-year"
+                type="number"
+                min={1000}
+                max={3000}
+                value={data.publication_year ?? ""}
+                onChange={(e) =>
+                  set(
+                    "publication_year",
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="book-pages">Páginas</label>
+              <input
+                id="book-pages"
+                type="number"
+                min={1}
+                max={100000}
+                value={data.page_count ?? ""}
+                onChange={(e) =>
+                  set(
+                    "page_count",
+                    e.target.value ? Number(e.target.value) : null,
+                  )
+                }
+              />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="book-description">Descripción breve</label>

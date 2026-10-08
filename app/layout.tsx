@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/repository";
 import { defaults } from "@/lib/types";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import "./book-discovery.css";
 const origin = siteOrigin();
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings().catch(() => defaults);

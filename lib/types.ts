@@ -83,6 +83,12 @@ export type Book = {
   purchase_url: string;
   publisher: string;
   saga: string;
+  isbn: string;
+  edition_format: string;
+  publication_year: number | null;
+  language: string;
+  translator: string;
+  page_count: number | null;
   created_at: string;
   updated_at: string;
   reservation_expires_at?: string | null;

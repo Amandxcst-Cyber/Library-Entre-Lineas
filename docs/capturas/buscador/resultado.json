@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Acceso privado de endpoints",
+    "Búsquedas anteriores canceladas",
+    "Autocompletado de edición",
+    "Comparación con stock y fuente bloqueada",
+    "Datos persistidos por API/SQL",
+    "Edición manual tras fallo",
+    "Sin desbordamiento móvil/tablet/escritorio"
+  ],
+  "externalSources": "simuladas",
+  "consoleErrors": []
+}

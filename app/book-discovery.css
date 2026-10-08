@@ -1,0 +1,141 @@
+.book-discovery {
+  margin: 12px 0 24px;
+  padding: 16px;
+  border: 1px solid #ddcdbf;
+  border-radius: 10px;
+  background: #faf6ee;
+  color: #543342;
+}
+.book-discovery p {
+  font-size: 0.87rem;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.book-discovery p[role="status"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.discovery-preference {
+  display: grid;
+  gap: 8px;
+  font-size: 0.87rem;
+  margin: 16px 0;
+}
+.discovery-preference select {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid #cdb9ac;
+  border-radius: 6px;
+  background: #fffaf4;
+  padding: 8px;
+  color: #543342;
+}
+.edition-advice {
+  padding: 12px;
+  border-left: 3px solid #6b2e47;
+  background: #f1e7db;
+  font-size: 0.87rem;
+}
+.edition-advice ul {
+  padding-left: 18px;
+  margin-top: 8px;
+}
+.edition-advice p {
+  font-size: 0.78rem;
+}
+.edition-results {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  max-height: 400px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.edition-results li {
+  padding: 2px;
+  border: 1px solid #ddcdbf;
+  border-radius: 8px;
+  background: #fffaf4;
+}
+.edition-choice {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  width: 100%;
+  min-height: 90px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  color: #543342;
+  background: transparent;
+  text-align: left;
+}
+.edition-choice:hover,
+.edition-choice.selected {
+  border-color: #6b2e47;
+  background: #f3e9df;
+}
+.edition-choice:focus-visible,
+.book-discovery a:focus-visible,
+.book-discovery button:focus-visible {
+  outline: 3px solid #6b2e47;
+  outline-offset: 2px;
+}
+.edition-choice img {
+  object-fit: contain;
+  width: 48px;
+  height: 70px;
+}
+.edition-choice span span {
+  display: block;
+  font-size: 0.79rem;
+  line-height: 1.5;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+.edition-choice strong {
+  font-size: 0.91rem;
+}
+.edition-source {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0 12px;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+.edition-prices h3 {
+  font-size: 1rem;
+  margin: 16px 0 8px;
+}
+.store-result {
+  border-top: 1px solid #ddcdbf;
+  padding: 12px 0;
+}
+.store-result a,
+.store-result button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  margin-right: 12px;
+}
+.store-result .offer-date {
+  font-size: 0.76rem;
+}
+.store-result button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+@media (max-width: 480px) {
+  .book-discovery {
+    padding: 12px;
+  }
+  .edition-results {
+    max-height: 320px;
+  }
+}

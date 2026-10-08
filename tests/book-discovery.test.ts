@@ -1,0 +1,424 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  isbn13,
+  cheapest,
+  recommend,
+  type Edition,
+  type Comparison,
+} from "../lib/book-discovery/shared";
+import {
+  googleEditions,
+  openEdition,
+  searchCatalog,
+  coverUrl,
+} from "../lib/book-discovery/catalog";
+import { sourceText, allowedUrl } from "../lib/book-discovery/network";
+import {
+  robotsAllowed,
+  productOffers,
+  compareStores,
+} from "../lib/book-discovery/stores";
+import { bookSchema } from "../lib/validation";
+
+const isbn = "9780141439518";
+const other = "9780141439600";
+const edition: Edition = {
+  id: "fixture",
+  title: "Historia de prueba",
+  author: "Autora",
+  isbn,
+  publisher: "Editorial sintética",
+  year: 2024,
+  language: "es",
+  format: "Tapa dura",
+  translator: "",
+  pages: 320,
+  cover: "",
+  description: "",
+  source: "Fixture",
+  sourceUrl: "https://openlibrary.org/books/OL1M",
+};
+const page = "https://www.antartica.cl/libro-de-prueba.html";
+const jsonProduct = (patch: any = {}) => ({
+  "@type": "Product",
+  isbn,
+  offers: {
+    "@type": "Offer",
+    price: "15990",
+    priceCurrency: "CLP",
+    availability: "https://schema.org/InStock",
+  },
+  ...patch,
+});
+const html = (data: unknown) =>
+  '<script type="application/ld+json">' + JSON.stringify(data) + "</script>";
+test("ISBN verifica dígito de control y normaliza ISBN-10", () => {
+  assert.equal(isbn13("0-14-143951-3"), isbn);
+  assert.equal(isbn13("978-0-14-143951-8"), isbn);
+  for (const bad of [
+    "9780141439519",
+    "1234567890123",
+    "ISBN desconocido",
+    "0141439514",
+  ])
+    assert.equal(isbn13(bad), "");
+  assert.equal(
+    bookSchema.safeParse({
+      title: "Historia",
+      author: "Autora",
+      priority: "love",
+      isbn: "9780141439519",
+    }).success,
+    false,
+  );
+});
+test("Importar metadata conserva la edición y limpia HTML sin atribuir traducciones", () => {
+  const result = googleEditions({
+    items: [
+      {
+        id: "test-volume",
+        saleInfo: { isEbook: true },
+        volumeInfo: {
+          title: "Historia",
+          authors: ["Autora"],
+          industryIdentifiers: [{ identifier: isbn }],
+          publishedDate: "2024-01",
+          language: "es",
+          publisher: "Editorial",
+          description: "<p>Sinopsis <b>breve</b></p>",
+          pageCount: 320,
+          imageLinks: {
+            thumbnail: "http://books.google.com/books/content?id=test-volume",
+          },
+        },
+      },
+    ],
+  });
+  assert.equal(result[0].isbn, isbn);
+  assert.equal(result[0].description, "Sinopsis breve");
+  assert.equal(result[0].translator, "");
+  assert.equal(result[0].format, "");
+  assert.ok(result[0].cover.startsWith("https:"));
+  assert.equal(coverUrl("https://127.0.0.1/image.jpg"), "");
+  const open = openEdition(
+    {
+      key: "/books/OL1M",
+      title: "Historia",
+      isbn_13: [isbn],
+      physical_format: "Paperback",
+      languages: [{ key: "/languages/spa" }],
+      contributors: [{ role: "translator", name: "Traductora identificada" }],
+    },
+    { author_name: ["Autora"] },
+  );
+  assert.equal(open?.translator, "Traductora identificada");
+  assert.equal(open?.language, "spa");
+});
+test("Solo el mismo ISBN combina fuentes y conserva sus referencias", async () => {
+  const fetcher = (async (url: any) => {
+    const u = String(url);
+    if (u.includes("googleapis"))
+      return Response.json({
+        items: [
+          {
+            id: "google-one",
+            volumeInfo: {
+              title: "Historia",
+              authors: ["Autora"],
+              industryIdentifiers: [{ identifier: isbn }],
+              language: "es",
+            },
+          },
+        ],
+      });
+    if (u.includes("search.json"))
+      return Response.json({
+        docs: [{ author_name: ["Autora"], edition_key: ["OL1M", "OL2M"] }],
+      });
+    return Response.json({
+      key: u.includes("OL1M") ? "/books/OL1M" : "/books/OL2M",
+      title: "Historia",
+      isbn_13: [u.includes("OL1M") ? isbn : other],
+      physical_format: "Paperback",
+    });
+  }) as typeof fetch;
+  const result = await searchCatalog("Historia", fetcher);
+  assert.equal(result.editions.length, 2);
+  const merged = result.editions.find((e) => e.isbn === isbn)!;
+  assert.equal(merged.format, "Paperback");
+  assert.equal(merged.sources?.length, 2);
+});
+test("Fuentes externas no pueden redirigir a IP privadas ni devolver respuestas ilimitadas", async () => {
+  assert.equal(
+    allowedUrl("https://www.antartica.cl.evil.test/x", ["www.antartica.cl"]),
+    null,
+  );
+  assert.equal(
+    allowedUrl("https://user:secret@www.antartica.cl/x", ["www.antartica.cl"]),
+    null,
+  );
+  let calls = 0;
+  const fetcher = (async () => {
+    calls++;
+    return new Response("", {
+      status: 302,
+      headers: { location: "http://127.0.0.1/admin" },
+    });
+  }) as typeof fetch;
+  await assert.rejects(sourceText(page, ["www.antartica.cl"], fetcher));
+  assert.equal(calls, 1);
+  await assert.rejects(
+    sourceText(
+      page,
+      ["www.antartica.cl"],
+      (async () => new Response("x".repeat(20))) as typeof fetch,
+      undefined,
+      10,
+    ),
+  );
+});
+test("Un catálogo fallido no convierte la búsqueda en vacía ni borra la fuente válida", async () => {
+  const fetcher = (async (url: any) => {
+    if (String(url).startsWith("https://openlibrary.org"))
+      return new Response("unavailable", { status: 503 });
+    return Response.json({
+      items: [
+        {
+          id: "test",
+          volumeInfo: {
+            title: "Historia",
+            authors: ["Autora"],
+            industryIdentifiers: [{ identifier: isbn }],
+            language: "es",
+          },
+        },
+      ],
+    });
+  }) as typeof fetch;
+  const result = await searchCatalog("Historia", fetcher);
+  assert.equal(result.editions.length, 1);
+  assert.equal(result.partial, true);
+  await assert.rejects(
+    searchCatalog(
+      "Historia",
+      (async () => new Response("", { status: 503 })) as typeof fetch,
+    ),
+  );
+});
+test("La búsqueda por ISBN descarta otros libros aun si el proveedor los devuelve", async () => {
+  const fetcher = (async (url: any) =>
+    String(url).includes("openlibrary")
+      ? Response.json({ docs: [] })
+      : Response.json({
+          items: [
+            {
+              id: "different",
+              volumeInfo: {
+                title: "Otro",
+                authors: ["Autora"],
+                industryIdentifiers: [{ identifier: other }],
+              },
+            },
+          ],
+        })) as typeof fetch;
+  assert.equal((await searchCatalog(isbn, fetcher)).editions.length, 0);
+});
+test("Las ofertas exigen ISBN coincidente, CLP e importe entero; no mezclan ediciones ni monedas", () => {
+  const offers = productOffers(
+    html({
+      "@graph": [
+        jsonProduct(),
+        jsonProduct({ isbn: other }),
+        jsonProduct({ offers: { price: 10, priceCurrency: "USD" } }),
+      ],
+    }),
+    page,
+    isbn,
+    "Antártica",
+    "2026-10-08T00:00:00Z",
+  );
+  assert.equal(offers.length, 1);
+  assert.equal(offers[0].price, 15990);
+  assert.equal(offers[0].available, true);
+  for (const price of ["$15.990", "15.990", 0, -1, 1.2, 10000001])
+    assert.equal(
+      productOffers(
+        html(jsonProduct({ offers: { price, priceCurrency: "CLP" } })),
+        page,
+        isbn,
+        "Antártica",
+        "date",
+      ).length,
+      0,
+    );
+});
+test("Ofertas de miembros, precios agregados y sin impuestos no se declaran como precio general", () => {
+  for (const patch of [
+    { validForMemberTier: "club" },
+    { "@type": "AggregateOffers" },
+    { priceSpecification: { valueAddedTaxIncluded: false } },
+  ]) {
+    assert.equal(
+      productOffers(
+        html(jsonProduct({ offers: { ...jsonProduct().offers, ...patch } })),
+        page,
+        isbn,
+        "Antártica",
+        "date",
+      ).length,
+      0,
+    );
+  }
+});
+test("Stock desconocido o agotado nunca gana la comparación de precios", () => {
+  const comparison: Comparison = {
+    isbn,
+    stores: [
+      {
+        store: "Fixture",
+        status: "verified",
+        searchUrl: page,
+        offers: [
+          {
+            store: "Fixture",
+            isbn,
+            price: 100,
+            url: page,
+            available: null,
+            checkedAt: "date",
+          },
+          {
+            store: "Fixture",
+            isbn,
+            price: 200,
+            url: page,
+            available: false,
+            checkedAt: "date",
+          },
+          {
+            store: "Fixture",
+            isbn,
+            price: 300,
+            url: page,
+            available: true,
+            checkedAt: "date",
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(cheapest(comparison)?.price, 300);
+});
+test("robots.txt respeta prohibiciones, reglas específicas y no evade el bloqueo", async () => {
+  assert.equal(
+    robotsAllowed("User-agent: *\nDisallow: /search", "/search?q=1"),
+    false,
+  );
+  assert.equal(
+    robotsAllowed(
+      "User-agent: *\nDisallow: /\nAllow: /products/",
+      "/products/book",
+    ),
+    true,
+  );
+  assert.equal(
+    robotsAllowed(
+      "User-agent: AmandaEntreLineas\nDisallow: /\nUser-agent: *\nAllow: /",
+      "/products/book",
+    ),
+    false,
+  );
+  assert.equal(
+    robotsAllowed("User-agent: *\nCrawl-delay: 10", "/products/book"),
+    false,
+  );
+  let productRequests = 0;
+  const fetcher = (async (url: any) => {
+    if (String(url).endsWith("/robots.txt"))
+      return new Response("User-agent: *\nDisallow: /");
+    productRequests++;
+    return new Response("");
+  }) as typeof fetch;
+  const result = await compareStores(isbn, fetcher);
+  assert.equal(productRequests, 0);
+  assert.ok(
+    result.stores.every((s) => s.status === "blocked" && !s.offers.length),
+  );
+});
+test("Comparación aislada consulta las cuatro fuentes y distingue errores de stock", async () => {
+  const fetcher = (async (url: any) => {
+    if (String(url).endsWith("/robots.txt"))
+      return new Response("", { status: 404 });
+    if (String(url).includes("buscalibre"))
+      return new Response("", { status: 403 });
+    return new Response(
+      html(
+        jsonProduct({ url: new URL("/products/fixture", String(url)).href }),
+      ),
+    );
+  }) as typeof fetch;
+  const result = await compareStores(isbn, fetcher);
+  assert.equal(result.stores.length, 4);
+  assert.equal(
+    result.stores.find((s) => s.store === "Buscalibre")?.status,
+    "blocked",
+  );
+  assert.equal(result.stores.filter((s) => s.status === "verified").length, 3);
+  assert.ok(
+    result.stores
+      .flatMap((s) => s.offers)
+      .every((o) => o.isbn === isbn && o.checkedAt),
+  );
+});
+test("Recomendación favorece español y no inventa calidad de traducción, extras o mejor edición", () => {
+  const best = recommend(
+    [{ ...edition, id: "english", language: "en" }, edition],
+    "reading",
+  );
+  assert.equal(best?.edition.id, "fixture");
+  assert.ok(best?.limitations.includes("no en una lectura"));
+  const translation = recommend(
+    [{ ...edition, id: "translation", translator: "Traductora" }],
+    "translation",
+  );
+  assert.ok(
+    translation?.reasons.some((r) => r.includes("no demuestra su calidad")),
+  );
+  assert.equal(recommend([], "reading"), null);
+});
+test("Una respuesta inválida del proveedor no parece un catálogo vacío", async () => {
+  await assert.rejects(
+    searchCatalog("Historia", (async () =>
+      Response.json({ error: "upstream problem" })) as typeof fetch),
+  );
+  const empty = await searchCatalog("Historia", (async (url: any) =>
+    Response.json(
+      String(url).includes("openlibrary") ? { docs: [] } : { totalItems: 0 },
+    )) as typeof fetch);
+  assert.equal(empty.editions.length, 0);
+  assert.equal(empty.partial, false);
+});
+test("Una oferta malformada no borra otra válida ni permite enlaces ajenos a la librería", () => {
+  const product = jsonProduct({
+    offers: [
+      { ...jsonProduct().offers, url: "http://[invalid" },
+      { ...jsonProduct().offers, url: "https://example.com/other" },
+      jsonProduct().offers,
+    ],
+  });
+  assert.equal(
+    productOffers(html(product), page, isbn, "Antártica", "date").length,
+    1,
+  );
+  assert.equal(
+    productOffers(
+      html(jsonProduct()),
+      "https://www.antartica.cl/catalogsearch/result/?q=" + isbn,
+      isbn,
+      "Antártica",
+      "date",
+    ).length,
+    0,
+  );
+});

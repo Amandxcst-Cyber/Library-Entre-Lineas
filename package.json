@@ -12,13 +12,17 @@
     "typecheck": "tsc --noEmit",
     "test:db": "node --import tsx tests/database.test.ts",
     "test:validation": "node --import tsx tests/validation.test.ts",
-    "test": "npm run test:validation && npm run test:db",
+    "test": "npm run test:validation && npm run test:db && npm run test:discovery",
     "format": "prettier --write app components lib tests proxy.ts next.config.ts package.json README.md",
-    "format:check": "prettier --check app components lib tests proxy.ts next.config.ts package.json README.md"
+    "format:check": "prettier --check app components lib tests proxy.ts next.config.ts package.json README.md",
+    "test:discovery": "node --import tsx tests/book-discovery.test.ts",
+    "test:fixture": "node --import tsx tests/support/supabase-fixture.ts",
+    "test:browser-discovery": "node tests/browser-discovery.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.117.2",
+    "cheerio": "1.1.2",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "^1.31.0",

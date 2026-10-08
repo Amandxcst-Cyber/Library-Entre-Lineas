@@ -97,6 +97,54 @@ test("Permisos, biblioteca, reservas y vaquitas", async (t) => {
         "insert into public.gift_items(title,category,status) values('Un juego mágico','Harry Potter','wishlist'),('Juego cooperativo','Juegos de mesa','wishlist'),('Funda de lector','Lectura y tecnología','wishlist'),('En pausa','Harry Potter','archived'),('Ya es mío','Otros detalles','owned') returning id,status",
       )
     ).rows;
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/003_book_editions.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await t.test(
+      "La migración de ediciones conserva libros, reservas y RLS",
+      async () => {
+        assert.equal((await state(books[11], hash("9"))).reserved, true);
+        assert.equal(
+          await value<number>(
+            "select count(*)::int as value from public.books",
+          ),
+          14,
+        );
+        await context("authenticated", owner);
+        await db.query(
+          "update public.books set isbn='9780141439518',edition_format='Tapa dura',language='es',publication_year=2024,page_count=320 where id=$1",
+          [books[10]],
+        );
+        const publicRows = await db.query<{ value: { isbn?: string } }>(
+          "select public.get_wishlist_books() as value",
+        );
+        assert.ok(
+          publicRows.rows.some((r) => r.value.isbn === "9780141439518"),
+        );
+        await fails(
+          db.query("update public.books set page_count=-1 where id=$1", [
+            books[10],
+          ]),
+          "23514",
+        );
+        await context("authenticated", stranger);
+        assert.equal(
+          await value<number>(
+            "with changed as (update public.books set language='en' where id='" +
+              books[10] +
+              "' returning id) select count(*)::int as value from changed",
+          ),
+          0,
+        );
+        await context("super");
+      },
+    );
     const gifts = giftRows
       .filter((i) => i.status === "wishlist")
       .map((i) => i.id);

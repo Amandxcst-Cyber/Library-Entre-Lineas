@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isbn13 } from "./book-discovery/shared";
 const safeUrl = z
   .string()
   .max(2048)
@@ -94,6 +95,27 @@ export const bookSchema = z
       .default(""),
     publisher: z.string().trim().max(200).default(""),
     saga: z.string().trim().max(200).default(""),
+    isbn: z
+      .string()
+      .trim()
+      .max(30)
+      .refine(
+        (v) => !v || !!isbn13(v),
+        "Usa un ISBN de 10 o 13 dígitos válido.",
+      )
+      .transform((v) => (v ? isbn13(v) : ""))
+      .default(""),
+    edition_format: z.string().trim().max(80).default(""),
+    publication_year: z
+      .number()
+      .int()
+      .min(1000)
+      .max(3000)
+      .nullable()
+      .default(null),
+    language: z.string().trim().max(40).default(""),
+    translator: z.string().trim().max(240).default(""),
+    page_count: z.number().int().min(1).max(100000).nullable().default(null),
   })
   .strict();
 export const settingsSchema = z

@@ -1,10 +1,12 @@
 # Amanda entre líneas
 
+> **Rama de mejora en preparación:** buscador de libros y ediciones implementado localmente. Fuentes comerciales todavía sin verificar en vivo; requiere la migración incremental 003 antes de publicar. Consulta [el alcance, las pruebas y los pasos pendientes](docs/AUTOMATIZACION_LIBROS.md). La versión de producción sigue en `main`.
+
 La wishlist personal de Amanda (@amandxcst), con libros como protagonistas, una biblioteca privada, vaquitas para sueños lectores y un estante de otros regalitos.
 
 Esta versión es una aplicación independiente: se puede alojar en Vercel y usar con un dominio propio. Las visitas no necesitan cuenta. Amanda entra con correo y contraseña en `/login`; la aplicación no usa autenticación de ChatGPT.
 
-El código y la migración están preparados y probados localmente. Para que funcione con datos reales hay que crear el proyecto de Supabase, configurar las variables y desplegar. Este archivo no incluye credenciales ni un despliegue externo ya creado.
+La versión original ya fue desplegada en `library-entre-lineas.vercel.app`, según las capturas aportadas por Amanda, quien confirmó que pudo iniciar sesión. Esta rama agrega una mejora comprobada localmente, todavía pendiente de verificar con las fuentes externas y de publicar. No contiene credenciales ni acredita una prueba completa de producción.
 
 ## Qué incluye
 
