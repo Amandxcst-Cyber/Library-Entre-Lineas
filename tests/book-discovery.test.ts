@@ -754,3 +754,125 @@ test("La búsqueda de una obra elige ediciones españolas antes de resolver auto
   assert.equal(result.editions[0].publisher, "Sello español");
   assert.ok(!calls.some((u) => u.includes("/authors/OL9A")));
 });
+
+test("El comparador mantiene cuatro tiendas y separa precios obtenidos de fuentes bloqueadas", async () => {
+  const { comparisonRows, retailerWebSearch } = await import(
+    "../lib/book-discovery/retailer-links"
+  );
+  const rows = comparisonRows(isbn, {
+    isbn,
+    stores: [
+      {
+        store: "Penguin Libros",
+        status: "blocked",
+        searchUrl:
+          "https://www.penguinlibros.com/cl/busqueda?controller=search&s=" +
+          isbn,
+        offers: [],
+      },
+      {
+        store: "Contrapunto",
+        status: "verified",
+        searchUrl: "https://contrapunto.cl/search",
+        offers: [
+          {
+            store: "Contrapunto",
+            isbn,
+            price: 16030,
+            url: "https://contrapunto.cl/products/prueba",
+            available: true,
+            checkedAt: "2026-10-08T19:00:00Z",
+          },
+        ],
+      },
+    ],
+  });
+  assert.equal(rows.length, 4);
+  assert.equal(rows[0].name, "Contrapunto");
+  const penguin = rows.find((r) => r.name === "Penguin Libros")!;
+  assert.equal(penguin.home, "https://www.penguinlibros.com/cl/");
+  assert.equal(penguin.offers.length, 0);
+  assert.equal(penguin.status, "blocked");
+  const search = new URL(retailerWebSearch("Penguin Libros", isbn));
+  assert.equal(
+    search.searchParams.get("q"),
+    `site:www.penguinlibros.com/cl/ "${isbn}"`,
+  );
+  assert.equal(retailerWebSearch("Penguin Libros", "un título"), "");
+});
+
+test("El comparador no publica ofertas de otro ISBN ni URLs externas a la librería", async () => {
+  const { comparisonRows } = await import(
+    "../lib/book-discovery/retailer-links"
+  );
+  const snapshot: Comparison = {
+    isbn,
+    stores: [
+      {
+        store: "Antártica",
+        status: "verified",
+        searchUrl: "https://www.antartica.cl/",
+        offers: [
+          {
+            store: "Antártica",
+            isbn: other,
+            price: 1,
+            url: "https://www.antartica.cl/libro",
+            available: true,
+            checkedAt: "2026-10-08T19:00:00Z",
+          },
+          {
+            store: "Antártica",
+            isbn,
+            price: 2,
+            url: "https://example.com/libro",
+            available: true,
+            checkedAt: "2026-10-08T19:00:00Z",
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(
+    comparisonRows(isbn, snapshot).flatMap((r) => r.offers).length,
+    0,
+  );
+  assert.equal(
+    comparisonRows(other, snapshot).flatMap((r) => r.offers).length,
+    0,
+  );
+});
+
+test("Precio de referencia recupera la oferta de la favorita sin reemplazar importes manuales", async () => {
+  const { bookReferencePrice } = await import("../lib/book-discovery/shared");
+  const snapshot: Comparison = {
+    isbn,
+    stores: [
+      {
+        store: "Contrapunto",
+        status: "verified",
+        searchUrl: "https://contrapunto.cl/",
+        offers: [
+          {
+            store: "Contrapunto",
+            isbn,
+            price: 16030,
+            url: "https://contrapunto.cl/products/prueba",
+            available: true,
+            checkedAt: "2026-10-08T19:00:00Z",
+          },
+        ],
+      },
+    ],
+  };
+  const book = {
+    isbn,
+    price: null,
+    edition_options: [{ edition, comparison: snapshot, note: "", extras: "" }],
+  };
+  assert.equal(bookReferencePrice(book), 16030);
+  assert.equal(bookReferencePrice({ ...book, price: 18990 }), 18990);
+  assert.equal(bookReferencePrice({ ...book, price: 0 }), 0);
+  assert.equal(bookReferencePrice({ ...book, isbn: other }), null);
+  assert.equal(bookReferencePrice({ ...book, edition_options: [] }), null);
+});

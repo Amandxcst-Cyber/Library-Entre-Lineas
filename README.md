@@ -1,12 +1,14 @@
 # Amanda entre líneas
 
-> **Ediciones y compras en Chile:** mejora incorporada a `main`, comprobada localmente: búsqueda en español, favorita primero y alternativas con sus datos y precios. Migración 004 ejecutada según confirmación de Amanda; publicación verificada mediante lecturas de la web; pendiente probar guardado con su cuenta real. [Uso, alcance y primer paso](docs/EDICIONES_CHILE.md). El buscador anterior de main funciona según confirmación de Amanda; las consultas automáticas de tiendas tienen cobertura limitada.
+> **Comparador de tiendas:** corrección del panel y ficha pública: cuatro tiendas visibles, estado de cada fuente, acceso a sus sitios oficiales y precio de referencia obtenido de la edición favorita cuando el importe manual está vacío. La cobertura automática sigue limitada. [Qué funciona y qué falta](docs/COMPARADOR_TIENDAS.md).
+
+> **Ediciones y compras en Chile:** mejora incorporada a `main`, comprobada localmente: búsqueda en español, favorita primero y alternativas con sus datos y precios. Migración 004 ejecutada según confirmación de Amanda; publicación verificada mediante lecturas de la web; una lectura pública confirmó variantes guardadas por Amanda; pendiente que pruebe el comparador actualizado con su cuenta. [Uso, alcance y primer paso](docs/EDICIONES_CHILE.md). El buscador anterior de main funciona según confirmación de Amanda; las consultas automáticas de tiendas tienen cobertura limitada.
 
 La wishlist personal de Amanda (@amandxcst), con libros como protagonistas, una biblioteca privada, vaquitas para sueños lectores y un estante de otros regalitos.
 
 Esta versión es una aplicación independiente: se puede alojar en Vercel y usar con un dominio propio. Las visitas no necesitan cuenta. Amanda entra con correo y contraseña en `/login`; la aplicación no usa autenticación de ChatGPT.
 
-La versión original ya fue desplegada en `library-entre-lineas.vercel.app`, según las capturas aportadas por Amanda, quien confirmó que pudo iniciar sesión. Esta actualización agrega una mejora comprobada localmente y con fuentes externas con cobertura limitada. La migración real fue confirmada por Amanda; Amanda confirmó también que el buscador publicado funciona. La comparación pública de variantes se incorpora al código de main tras confirmar Amanda la migración 004; la web ya sirve la mejora, pero el guardado con su cuenta real todavía requiere verificación. No contiene credenciales ni acredita una prueba completa de producción.
+La versión original ya fue desplegada en `library-entre-lineas.vercel.app`, según las capturas aportadas por Amanda, quien confirmó que pudo iniciar sesión. Esta actualización agrega una mejora comprobada localmente y con fuentes externas con cobertura limitada. La migración real fue confirmada por Amanda; Amanda confirmó también que el buscador publicado funciona. La comparación pública de variantes se incorpora al código de main tras confirmar Amanda la migración 004; una lectura pública confirmó el libro de Amanda con variantes guardadas; resta que pruebe el comparador actualizado con su cuenta. No contiene credenciales ni acredita una prueba completa de producción.
 
 ## Qué incluye
 

@@ -34,9 +34,13 @@ El código se incorpora a main. **Despliegue comprobado mediante lecturas públi
 
 ## Verificación
 
-- `npm test`: 57 pruebas de validación, PostgreSQL/RLS/reservas y catálogos/ofertas.
+- `npm test`: 60 pruebas de validación, PostgreSQL/RLS/reservas y catálogos/ofertas.
 - `npm run typecheck`, `npm run format:check`, `npm run build`.
 - `npm run test:browser-discovery`: Auth/Storage/catálogos/ofertas simulados, SQL/RLS reales en PGlite. Verifica selección, consulta de alternativa, persistencia por API/SQL, favorita antes de una alternativa más barata, motivo público y ausencia de desbordamiento a 360/390/768/1440 px.
 - Las capturas y resultados del flujo están en `docs/capturas/ediciones-chile/`; contienen datos ficticios, no precios comerciales reales.
 - [Evidencia de la revalidación real](evidencia/ediciones-chile-real/README.md): metadatos y oferta de Contrapunto comprobados; sin guardar libros.
 - `npm run test:live-discovery`: prueba adicional con fuentes reales y cuenta/base locales, sin guardar libros. Puede fallar si una fuente cambia o se bloquea. No acredita configuración real de Supabase ni despliegue.
+
+## Corrección del comparador
+
+El panel ahora ofrece Comparar tiendas y usa la oferta guardada de la favorita cuando no hay un importe manual. La ficha presenta las cuatro fuentes y diferencia los precios obtenidos de los pendientes. Las búsquedas bloqueadas se reemplazan por sitio oficial y búsqueda web humana del ISBN. [Detalle, verificación y cobertura pendiente](COMPARADOR_TIENDAS.md). No requiere SQL adicional.

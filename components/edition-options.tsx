@@ -2,10 +2,8 @@
 import { useEffect, useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { Book } from "@/lib/types";
-import { formatPrice } from "@/lib/types";
+import PriceComparison from "./price-comparison";
 import {
-  cheapest,
-  chilePurchaseUrl,
   editionFeatures,
   editionReasons,
   type Edition,
@@ -51,61 +49,6 @@ export function bookEdition(
     source: "Amanda",
     sourceUrl: "",
   };
-}
-function Prices({ comparison }: { comparison: Comparison | null }) {
-  if (!comparison) return <p>Precios en Chile por consultar.</p>;
-  const minimum = cheapest(comparison);
-  const count = comparison.stores.filter((s) =>
-    s.offers.some((o) => o.available === true),
-  ).length;
-  return (
-    <div className="edition-store-list">
-      {minimum && (
-        <p className="edition-price">
-          <strong>{formatPrice(minimum.price)} CLP</strong> ·{" "}
-          {count > 1
-            ? "menor precio obtenido"
-            : "única oferta disponible obtenida"}{" "}
-          · sin envío
-        </p>
-      )}
-      {comparison.stores.map((store) => (
-        <div key={store.store} className="edition-store">
-          <strong>{store.store}</strong>
-          {store.offers.length ? (
-            store.offers.map((offer) => (
-              <div key={offer.url}>
-                <a href={offer.url} target="_blank" rel="noopener noreferrer">
-                  {formatPrice(offer.price)} CLP ·{" "}
-                  {offer.available === true
-                    ? "Stock al consultar"
-                    : offer.available === false
-                      ? "Sin stock al consultar"
-                      : "Stock por confirmar"}
-                </a>
-                <small>
-                  Consultado{" "}
-                  {new Date(offer.checkedAt).toLocaleString("es-CL", {
-                    timeZone: "America/Santiago",
-                  })}
-                </small>
-              </div>
-            ))
-          ) : (
-            <a href={store.searchUrl} target="_blank" rel="noopener noreferrer">
-              {store.status === "blocked"
-                ? "Consultar directamente en tienda"
-                : "Buscar esta edición en tienda"}
-            </a>
-          )}
-        </div>
-      ))}
-      <p className="edition-footnote">
-        Valores de la última consulta, no precios en tiempo real. Confirma
-        precio final, stock y envío en la tienda.
-      </p>
-    </div>
-  );
 }
 function EditionSummary({
   edition,
@@ -190,7 +133,10 @@ export default function BookEditionComparison({ book }: { book: Book }) {
           edition={bookEdition(book)}
           extras={book.edition_extras || ""}
         />
-        <Prices comparison={preferred?.comparison || null} />
+        <PriceComparison
+          comparison={preferred?.comparison || null}
+          isbn={book.isbn}
+        />
       </article>
       {alternatives.length > 0 && (
         <>
@@ -234,7 +180,10 @@ export default function BookEditionComparison({ book }: { book: Book }) {
             </blockquote>
           )}
           <EditionSummary edition={option.edition} extras={option.extras} />
-          <Prices comparison={option.comparison} />
+          <PriceComparison
+            comparison={option.comparison}
+            isbn={option.edition.isbn}
+          />
           {option.edition.sourceUrl && (
             <a
               href={option.edition.sourceUrl}
@@ -350,7 +299,10 @@ function EditableOption({
       {loading ? (
         <p role="status">Consultando precios en Chile…</p>
       ) : (
-        <Prices comparison={option.comparison} />
+        <PriceComparison
+          comparison={option.comparison}
+          isbn={option.edition.isbn}
+        />
       )}{" "}
       {error && <p role="alert">{error}</p>}
       <div className="edition-row-actions">

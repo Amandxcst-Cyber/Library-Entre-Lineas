@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "Acceso privado de endpoints",
+    "Búsquedas anteriores canceladas",
+    "Autocompletado de edición",
+    "Comparación con stock y fuente bloqueada",
+    "Datos persistidos por API/SQL",
+    "Alternativas y precios por ISBN guardados",
+    "Comparador de cuatro tiendas desde el panel",
+    "Precio de referencia cuando el importe manual está vacío",
+    "Sitio oficial para fuentes bloqueadas y copia de ISBN",
+    "Favorita y motivo primero ante una alternativa más barata",
+    "Edición manual tras fallo",
+    "Sin desbordamiento móvil/tablet/escritorio"
+  ],
+  "externalSources": "simuladas",
+  "consoleErrors": []
+}

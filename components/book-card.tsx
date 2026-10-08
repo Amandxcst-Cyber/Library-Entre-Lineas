@@ -2,7 +2,10 @@
 import { useState } from "react";
 import { BookOpen, ExternalLink, Heart } from "lucide-react";
 import BookEditionComparison from "./edition-options";
-import { chilePurchaseUrl } from "@/lib/book-discovery/shared";
+import {
+  chilePurchaseUrl,
+  bookReferencePrice,
+} from "@/lib/book-discovery/shared";
 import GiftReservation from "./gift-reservation";
 import { Book, Settings, formatPrice } from "@/lib/types";
 import {
@@ -42,6 +45,7 @@ export default function BookCard({
   onReservationChange: (expires: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const referencePrice = bookReferencePrice(book);
   const priority = settings.priorities.find((p) => p.id === book.priority),
     genre = settings.genres.find((g) => g.id === book.genre)?.label;
   return (
@@ -71,8 +75,10 @@ export default function BookCard({
           )}
           <div className="book-bottom">
             <span className="book-price">
-              {book.special_gift ? "Regalo especial" : formatPrice(book.price)}
-              {book.price !== null && !book.special_gift && (
+              {book.special_gift
+                ? "Regalo especial"
+                : formatPrice(referencePrice)}
+              {referencePrice !== null && !book.special_gift && (
                 <small>aprox. · CLP</small>
               )}
             </span>
@@ -118,8 +124,8 @@ export default function BookCard({
               <div>
                 <dt>Precio aproximado</dt>
                 <dd>
-                  {formatPrice(book.price)}
-                  {book.price !== null ? " CLP" : ""}
+                  {formatPrice(referencePrice)}
+                  {referencePrice !== null ? " CLP" : ""}
                 </dd>
               </div>
               <div>

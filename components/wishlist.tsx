@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Book, Settings, GiftGoal, GiftItem } from "@/lib/types";
 import BookCard from "./book-card";
+import { bookReferencePrice } from "@/lib/book-discovery/shared";
 import GiftGoals from "./gift-goals";
 import GiftItems from "./gift-items";
 import SelectField from "./select-field";
@@ -119,16 +120,17 @@ export default function Wishlist({
               (filters.price === "special"
                 ? !!b.special_gift
                 : filters.price === "unknown"
-                  ? b.price === null
+                  ? bookReferencePrice(b) === null
                   : band &&
-                    b.price !== null &&
-                    b.price >= band.min &&
-                    (band.max === null || b.price <= band.max)))
+                    bookReferencePrice(b) !== null &&
+                    bookReferencePrice(b)! >= band.min &&
+                    (band.max === null || bookReferencePrice(b)! <= band.max)))
           );
         })
         .sort((a, b) =>
           sort === "price"
-            ? (a.price ?? Infinity) - (b.price ?? Infinity)
+            ? (bookReferencePrice(a) ?? Infinity) -
+              (bookReferencePrice(b) ?? Infinity)
             : sort === "recent"
               ? b.created_at.localeCompare(a.created_at)
               : settings.priorities.findIndex((p) => p.id === a.priority) -

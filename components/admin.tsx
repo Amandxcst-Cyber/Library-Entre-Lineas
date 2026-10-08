@@ -50,6 +50,8 @@ import GiftItemsAdmin from "./gift-items-admin";
 import GoalsAdmin from "./goals-admin";
 import SelectField from "./select-field";
 import { Cover } from "./book-card";
+import BookEditionComparison from "./edition-options";
+import { bookReferencePrice } from "@/lib/book-discovery/shared";
 export default function Admin({
   initialBooks,
   initialSettings,
@@ -309,8 +311,12 @@ export default function Admin({
                         <h2>{book.title}</h2>
                         <p>{book.author}</p>
                         <small>
-                          {formatPrice(book.price)}
+                          {formatPrice(bookReferencePrice(book))}
                           {book.publisher ? ` · ${book.publisher}` : ""}
+                          {book.price === null &&
+                          bookReferencePrice(book) !== null
+                            ? " · última consulta"
+                            : ""}
                         </small>
                         <div className="admin-priority">
                           <SelectField
@@ -377,6 +383,10 @@ export default function Admin({
                           </button>
                         </div>
                       </div>
+                      <details className="admin-book-comparison">
+                        <summary>Comparar tiendas</summary>
+                        <BookEditionComparison book={book} />
+                      </details>
                     </article>
                   ))}
                 </div>

@@ -7,32 +7,8 @@ import {
   type StoreResult,
 } from "./shared";
 
-export const stores = [
-  {
-    name: "Penguin Libros",
-    origin: "https://www.penguinlibros.com",
-    search: (isbn: string) =>
-      `https://www.penguinlibros.com/cl/busqueda?controller=search&s=${isbn}`,
-  },
-  {
-    name: "Antártica",
-    origin: "https://www.antartica.cl",
-    search: (isbn: string) =>
-      `https://www.antartica.cl/catalogsearch/result/?q=${isbn}`,
-  },
-  {
-    name: "Buscalibre",
-    origin: "https://www.buscalibre.cl",
-    search: (isbn: string) =>
-      `https://www.buscalibre.cl/libros/search?q=${isbn}`,
-  },
-  {
-    name: "Contrapunto",
-    origin: "https://contrapunto.cl",
-    search: (isbn: string) =>
-      `https://contrapunto.cl/search?q=${isbn}&type=product`,
-  },
-];
+import { retailers } from "./retailer-links";
+export const stores = retailers;
 export function robotsAllowed(robots: string, path: string) {
   const groups: {
     agents: string[];

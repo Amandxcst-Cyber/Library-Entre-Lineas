@@ -210,3 +210,15 @@ export function sameWork(
     title(a.title) === title(b.title)
   );
 }
+
+export function bookReferencePrice(book: {
+  price: number | null;
+  isbn: string;
+  edition_options?: EditionOption[];
+}) {
+  if (book.price !== null) return book.price;
+  const selected = book.edition_options?.find(
+    (o) => o.edition.isbn === isbn13(book.isbn),
+  );
+  return cheapest(selected?.comparison || undefined)?.price ?? null;
+}

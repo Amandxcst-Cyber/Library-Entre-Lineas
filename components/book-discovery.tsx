@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen, LoaderCircle } from "lucide-react";
 import {
-  cheapest,
   isbn13,
   recommend,
   spanish,
@@ -12,7 +11,7 @@ import {
   type Offer,
   type Preference,
 } from "@/lib/book-discovery/shared";
-import { formatPrice } from "@/lib/types";
+import PriceComparison from "./price-comparison";
 
 export default function BookDiscovery({
   query,
@@ -128,13 +127,6 @@ export default function BookDiscovery({
         comparison,
       ); /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [comparison]);
-  const lowest = cheapest(comparison);
-  const availableStores =
-    comparison?.stores.filter((store) =>
-      store.offers.some(
-        (offer) => offer.available === true && offer.isbn === comparison.isbn,
-      ),
-    ).length || 0;
   return (
     <section className="book-discovery" aria-label="Buscar ediciones y precios">
       <p className="discovery-help">
@@ -334,81 +326,13 @@ export default function BookDiscovery({
         </p>
       )}
       {comparison && (
-        <div className="edition-prices">
-          <h3>Precios para ISBN {comparison.isbn}</h3>
-          <p>
-            Consulta por edición. Los montos son CLP y no incluyen envío. Se
-            muestran ofertas solo si la fuente publica un ISBN y precio
-            coincidentes; el stock debe confirmarse al comprar.
-          </p>
-          {comparison.stores.map((store) => (
-            <div className="store-result" key={store.store}>
-              <strong>{store.store}</strong>
-              {store.offers.length ? (
-                store.offers.map((offer) => (
-                  <div key={offer.url + offer.price}>
-                    <p>
-                      {formatPrice(offer.price)} ·{" "}
-                      {offer.available === true
-                        ? "Stock indicado por la fuente"
-                        : offer.available === false
-                          ? "Sin stock"
-                          : "Stock sin confirmar"}
-                      {lowest?.url === offer.url &&
-                      lowest?.price === offer.price
-                        ? availableStores > 1
-                          ? " · Menor precio entre las fuentes que respondieron"
-                          : " · Única fuente con oferta disponible obtenida"
-                        : ""}
-                    </p>
-                    <p className="offer-date">
-                      Consultado:{" "}
-                      {new Date(offer.checkedAt).toLocaleString("es-CL")}
-                    </p>
-                    <a
-                      href={offer.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Ver oferta
-                    </a>{" "}
-                    <button
-                      type="button"
-                      className="text-link"
-                      disabled={offer.available !== true}
-                      onClick={() => onOffer(offer)}
-                    >
-                      Usar este precio y link
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p>
-                  {store.status === "blocked"
-                    ? "La fuente no permitió la consulta automática."
-                    : store.status === "unavailable"
-                      ? "No pudimos consultar esta fuente."
-                      : "No obtuvimos un precio verificable para este ISBN."}
-                </p>
-              )}
-              <a
-                href={store.searchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Buscar en {store.store}
-              </a>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="text-link"
-            onClick={() => setPriceRetry((n) => n + 1)}
-            disabled={priceLoading}
-          >
-            Consultar de nuevo
-          </button>
-        </div>
+        <PriceComparison
+          comparison={comparison}
+          isbn={selectedIsbn}
+          onOffer={onOffer}
+          onRefresh={() => setPriceRetry((n) => n + 1)}
+          refreshing={priceLoading}
+        />
       )}
     </section>
   );

@@ -92,9 +92,12 @@ try {
   );
   assert.ok(
     await dialog
-      .getByText("Única fuente con oferta disponible obtenida", {
-        exact: false,
-      })
+      .getByText(
+        "Única oferta disponible obtenida. Faltan precios para comparar todas las tiendas.",
+        {
+          exact: false,
+        },
+      )
       .count(),
   );
   assert.ok(
@@ -119,7 +122,7 @@ try {
     .waitFor({ state: "hidden", timeout: 15000 });
   await dialog.locator(".form-scroll").evaluate((el) => el.scrollTo(0, 0));
   await page.screenshot({ path: directory + "/edicion-real-mobile.png" });
-  await dialog.locator(".edition-prices").scrollIntoViewIfNeeded();
+  await dialog.locator(".price-comparison").scrollIntoViewIfNeeded();
   await page.screenshot({ path: directory + "/precio-real-mobile.png" });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await dialog.locator(".form-scroll").evaluate((el) => el.scrollTo(0, 0));

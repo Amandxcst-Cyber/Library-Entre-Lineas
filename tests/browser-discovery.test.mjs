@@ -125,6 +125,20 @@ try {
             ],
           },
           {
+            store: "Penguin Libros",
+            status: "blocked",
+            searchUrl:
+              "https://www.penguinlibros.com/cl/busqueda?controller=search&s=" +
+              requestedIsbn,
+            offers: [],
+          },
+          {
+            store: "Contrapunto",
+            status: "no_match",
+            searchUrl: "https://contrapunto.cl/search?q=" + requestedIsbn,
+            offers: [],
+          },
+          {
             store: "Buscalibre",
             status: "blocked",
             searchUrl: "https://www.buscalibre.cl/",
@@ -248,9 +262,50 @@ try {
     saved.edition_note,
     "Me hace ilusión esta edición para mi colección.",
   );
+  const patched = await context.request.patch(
+    origin + "/api/books/" + saved.id,
+    { headers: { Origin: origin }, data: { price: null, purchase_url: "" } },
+  );
+  assert.equal(patched.status(), 200);
+  await page.reload();
+  const adminBook = page
+    .locator(".admin-book")
+    .filter({ hasText: first.title });
+  assert.ok(
+    (
+      await adminBook.locator(".admin-book-copy > small").textContent()
+    ).includes("15.990"),
+  );
+  await adminBook.getByText("Comparar tiendas", { exact: true }).click();
+  const adminCompare = adminBook
+    .getByRole("region", { name: "Comparador de precios en Chile" })
+    .first();
+  assert.equal(await adminCompare.locator("[data-store]").count(), 4);
+  assert.equal(
+    await adminCompare
+      .locator('[data-store="Penguin Libros"]')
+      .getByRole("link", { name: "Abrir sitio oficial" })
+      .getAttribute("href"),
+    "https://www.penguinlibros.com/cl/",
+  );
+  for (const width of [360, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      "Admin price overflow " + width,
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 1000 });
+  await adminCompare
+    .getByRole("heading", { name: "Comparar precios en Chile", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: artifactDir + "/comparador-panel-mobile.png" });
   const visitor = await browser.newContext({
     viewport: { width: 390, height: 844 },
   });
+  await visitor.grantPermissions(["clipboard-read", "clipboard-write"]);
   const publicPage = await visitor.newPage();
   await publicPage.route("https://covers.openlibrary.org/**", (r) => r.abort());
   await publicPage.goto(origin);
@@ -261,6 +316,21 @@ try {
     name: "Ediciones y compras en Chile",
   });
   await comparison.getByText("Mi edición elegida · primera opción").waitFor();
+  const publicCompare = comparison
+    .getByRole("region", { name: "Comparador de precios en Chile" })
+    .first();
+  assert.equal(await publicCompare.locator("[data-store]").count(), 4);
+  await publicCompare.getByRole("button", { name: "Copiar ISBN" }).click();
+  await publicCompare.getByText("ISBN copiado", { exact: true }).waitFor();
+  assert.equal(
+    await publicPage.evaluate(() => navigator.clipboard.readText()),
+    first.isbn,
+  );
+  assert.ok(
+    (await publicCompare.textContent()).includes(
+      "Faltan precios para comparar todas las tiendas.",
+    ),
+  );
   assert.equal(
     await comparison.locator("article").first().getAttribute("data-preferred"),
     "true",
@@ -286,6 +356,12 @@ try {
     await comparison.getByRole("heading").first().scrollIntoViewIfNeeded();
     await publicPage.screenshot({
       path: artifactDir + "/comparacion-publica-" + width + ".png",
+    });
+    await publicCompare
+      .getByRole("heading", { name: "Comparar precios en Chile", exact: true })
+      .scrollIntoViewIfNeeded();
+    await publicPage.screenshot({
+      path: artifactDir + "/comparador-tiendas-" + width + ".png",
     });
   }
   await visitor.close();
@@ -332,6 +408,9 @@ try {
           "Comparación con stock y fuente bloqueada",
           "Datos persistidos por API/SQL",
           "Alternativas y precios por ISBN guardados",
+          "Comparador de cuatro tiendas desde el panel",
+          "Precio de referencia cuando el importe manual está vacío",
+          "Sitio oficial para fuentes bloqueadas y copia de ISBN",
           "Favorita y motivo primero ante una alternativa más barata",
           "Edición manual tras fallo",
           "Sin desbordamiento móvil/tablet/escritorio",
