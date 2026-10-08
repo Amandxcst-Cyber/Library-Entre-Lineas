@@ -1,6 +1,6 @@
 # Amanda entre líneas · Instructivo de publicación
 
-> **Actualización para el buscador automático:** la versión original en `main` ya está desplegada y Amanda confirmó el acceso a su cuenta. La rama `feature/book-discovery` requiere verificar las fuentes externas y aplicar **solo** `supabase/migrations/003_book_editions.sql` antes de incorporarla a producción. Las migraciones 001 y 002 ya ejecutadas no deben repetirse. Consulta [la guía de la mejora y su evidencia](docs/AUTOMATIZACION_LIBROS.md). Los pasos siguientes se conservan como referencia para una instalación nueva.
+> **Actualización para el buscador automático:** la versión original en `main` ya está desplegada y Amanda confirmó el acceso a su cuenta. La rama `feature/book-discovery` ya comprobó fuentes externas con cobertura limitada y requiere aplicar **solo** `supabase/migrations/003_book_editions.sql` antes de incorporarla a producción. Las migraciones 001 y 002 ya ejecutadas no deben repetirse. Consulta [la guía de la mejora y su evidencia](docs/AUTOMATIZACION_LIBROS.md). Los pasos siguientes se conservan como referencia para una instalación nueva.
 
 Esta guía corresponde al proyecto **amanda-entre-lineas-independiente.zip**, versión 1.1.0: libros, otros regalitos y vaquitas. Al terminar tendrás una dirección pública para Instagram y un acceso privado con tu correo y contraseña. La publicación se hace en tus propias cuentas.
 

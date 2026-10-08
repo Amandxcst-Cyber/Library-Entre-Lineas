@@ -17,7 +17,8 @@
     "format:check": "prettier --check app components lib tests proxy.ts next.config.ts package.json README.md",
     "test:discovery": "node --import tsx tests/book-discovery.test.ts",
     "test:fixture": "node --import tsx tests/support/supabase-fixture.ts",
-    "test:browser-discovery": "node tests/browser-discovery.test.mjs"
+    "test:browser-discovery": "node tests/browser-discovery.test.mjs",
+    "test:live-discovery": "node tests/live-discovery.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

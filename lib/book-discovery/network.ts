@@ -36,6 +36,7 @@ export async function sourceText(
   fetcher: typeof fetch = fetch,
   signal?: AbortSignal,
   maxBytes = 2_000_000,
+  accept = "text/html,text/plain",
 ): Promise<string> {
   let current = allowedUrl(url, hosts);
   if (!current) throw new SourceError("blocked");
@@ -48,7 +49,7 @@ export async function sourceText(
       signal: requestSignal,
       headers: {
         "User-Agent": "AmandaEntreLineas/1.0 (ISBN catalog comparison)",
-        Accept: "application/json,text/html,text/plain",
+        Accept: accept,
       },
     });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -98,5 +99,14 @@ export async function sourceText(
   throw new SourceError("blocked");
 }
 export async function catalogJson(url: string, fetcher: typeof fetch = fetch) {
-  return JSON.parse(await sourceText(url, CATALOG_HOSTS, fetcher));
+  return JSON.parse(
+    await sourceText(
+      url,
+      CATALOG_HOSTS,
+      fetcher,
+      undefined,
+      2_000_000,
+      "application/json",
+    ),
+  );
 }

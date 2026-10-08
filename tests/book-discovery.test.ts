@@ -18,7 +18,12 @@ import {
   robotsAllowed,
   productOffers,
   compareStores,
+  productLinks,
 } from "../lib/book-discovery/stores";
+import {
+  contrapuntoEdition,
+  searchContrapunto,
+} from "../lib/book-discovery/retailer-catalog";
 import { bookSchema } from "../lib/validation";
 
 const isbn = "9780141439518";
@@ -393,9 +398,13 @@ test("Una respuesta inválida del proveedor no parece un catálogo vacío", asyn
       Response.json({ error: "upstream problem" })) as typeof fetch),
   );
   const empty = await searchCatalog("Historia", (async (url: any) =>
-    Response.json(
-      String(url).includes("openlibrary") ? { docs: [] } : { totalItems: 0 },
-    )) as typeof fetch);
+    String(url).includes("contrapunto.cl")
+      ? new Response("<html><body>Sin resultados</body></html>")
+      : Response.json(
+          String(url).includes("openlibrary")
+            ? { docs: [] }
+            : { totalItems: 0 },
+        )) as typeof fetch);
   assert.equal(empty.editions.length, 0);
   assert.equal(empty.partial, false);
 });
@@ -420,5 +429,143 @@ test("Una oferta malformada no borra otra válida ni permite enlaces ajenos a la
       "date",
     ).length,
     0,
+  );
+});
+
+test("El ISBN de Open Library se consulta directamente sin tomar otra edición de la obra", async () => {
+  const calls: string[] = [];
+  const fetcher = (async (url: any) => {
+    const u = String(url);
+    calls.push(u);
+    if (u.includes("googleapis"))
+      return new Response("rate limit", { status: 429 });
+    if (u.includes("contrapunto"))
+      return new Response("<html><body>Sin resultados</body></html>");
+    if (u.includes("/isbn/"))
+      return Response.json({
+        key: "/books/OL1M",
+        title: "Historia",
+        isbn_13: [isbn],
+        authors: [{ key: "/authors/OL1A" }],
+      });
+    if (u.includes("/authors/OL1A"))
+      return Response.json({ name: "Autora de esta edición" });
+    throw new Error("Unexpected request");
+  }) as typeof fetch;
+  const result = await searchCatalog(isbn, fetcher);
+  assert.equal(result.editions[0].isbn, isbn);
+  assert.equal(result.editions[0].author, "Autora de esta edición");
+  assert.ok(!calls.some((url) => url.includes("search.json")));
+  assert.equal(result.partial, true);
+});
+
+test("Los colaboradores de una obra no se atribuyen a una edición con autores propios", async () => {
+  const fetcher = (async (url: any) => {
+    const u = String(url);
+    if (u.includes("googleapis")) return Response.json({ totalItems: 0 });
+    if (u.includes("contrapunto"))
+      return new Response("<html><body>Sin resultados</body></html>");
+    if (u.includes("search.json"))
+      return Response.json({
+        docs: [
+          {
+            author_name: ["Autora", "Colaboradora de otra edición"],
+            edition_key: ["OL1M"],
+          },
+        ],
+      });
+    if (u.includes("/authors/")) return Response.json({ name: "Autora" });
+    return Response.json({
+      key: "/books/OL1M",
+      title: "Historia",
+      isbn_13: [isbn],
+      authors: [{ key: "/authors/OL1A" }],
+    });
+  }) as typeof fetch;
+  const result = await searchCatalog("Historia", fetcher);
+  assert.equal(result.editions[0].author, "Autora");
+});
+
+test("Una variante con otro ISBN no hereda la identidad del producto principal", () => {
+  const offers = productOffers(
+    html(jsonProduct({ offers: { ...jsonProduct().offers, sku: other } })),
+    page,
+    isbn,
+    "Fixture",
+    "date",
+  );
+  assert.equal(offers.length, 0);
+});
+
+test("Los enlaces de Shopify conservan la edición y eliminan solo las marcas de analítica", () => {
+  const links = productLinks(
+    '<a href="/products/book?_pos=1&_sid=abc&_ss=r">Libro</a><a href="/products/book?variant=2">Otra variante</a><a href="http://[invalid">Inválido</a><a href="https://example.com/products/book">Ajeno</a>',
+    "https://contrapunto.cl/search?q=test",
+    ["contrapunto.cl"],
+  );
+  assert.deepEqual(links, ["https://contrapunto.cl/products/book"]);
+});
+
+const retailerHtml = () =>
+  '<html><body><div class="pivot-authors">Autora de ejemplo</div><p class="pivot-metadata"><span>EDITORIAL:</span> Editorial de ejemplo<br><span>ISBN:</span> ' +
+  isbn +
+  "<br><span>ENCUADERNACIÓN:</span> Tapa blanda<br><span>IDIOMA:</span> Español<br><span>N° DE PÁGINAS:</span> 320</p>" +
+  html(
+    jsonProduct({
+      name: "Historia de prueba",
+      url: "https://contrapunto.cl/products/book",
+      image: ["https://contrapunto.cl/cdn/shop/files/cover.png"],
+      brand: { name: "Editorial de ejemplo" },
+      description: "<p>Sinopsis</p>",
+    }),
+  ) +
+  "</body></html>";
+
+test("La ficha comercial importa datos explícitos del libro y exige identidad consistente", () => {
+  const parsed = contrapuntoEdition(
+    retailerHtml(),
+    "https://contrapunto.cl/products/book",
+  );
+  assert.equal(parsed?.isbn, isbn);
+  assert.equal(parsed?.author, "Autora de ejemplo");
+  assert.equal(parsed?.language, "Español");
+  assert.equal(parsed?.pages, 320);
+  assert.equal(parsed?.translator, "");
+  assert.equal(parsed?.year, null);
+  assert.equal(
+    contrapuntoEdition(retailerHtml(), "https://contrapunto.cl/products/other"),
+    null,
+  );
+  assert.equal(
+    contrapuntoEdition(
+      retailerHtml().replace("ISBN:</span> " + isbn, "ISBN:</span> " + other),
+      "https://contrapunto.cl/products/book",
+    ),
+    null,
+  );
+});
+
+test("El catálogo comercial obtiene HTML y respeta robots antes de consultar productos", async () => {
+  let products = 0;
+  const fetcher = (async (url: any, options: any) => {
+    const u = String(url);
+    if (u.endsWith("/robots.txt"))
+      return new Response("User-agent: *\nAllow: /");
+    assert.equal(options.headers.Accept, "text/html,text/plain");
+    if (u.includes("/search?"))
+      return new Response(
+        '<html><a href="/products/book?_pos=1&_sid=abc&_ss=r">Libro</a></html>',
+      );
+    products++;
+    return new Response(retailerHtml());
+  }) as typeof fetch;
+  const result = await searchContrapunto("Historia", fetcher);
+  assert.equal(products, 1);
+  assert.equal(result.editions[0].isbn, isbn);
+  await assert.rejects(
+    searchContrapunto(
+      "Historia",
+      (async () => new Response("User-agent: *\nDisallow: /")) as typeof fetch,
+    ),
   );
 });

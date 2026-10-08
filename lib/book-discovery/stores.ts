@@ -93,14 +93,7 @@ export function robotsAllowed(robots: string, path: string) {
     );
   return matches[0]?.allow ?? true;
 }
-export function productOffers(
-  html: string,
-  page: string,
-  isbn: string,
-  store: string,
-  checkedAt: string,
-): Offer[] {
-  const host = new URL(page).hostname;
+export function structuredProducts(html: string): any[] {
   const $ = load(html);
   const products: any[] = [];
   const collect = (node: any, depth = 0) => {
@@ -139,6 +132,46 @@ export function productOffers(
         /* Another schema block may contain a valid offer. */
       }
     });
+  return products;
+}
+export function productLinks(
+  html: string,
+  page: string,
+  allowedHosts: string[],
+  isbn = "",
+) {
+  const $ = load(html);
+  const links: string[] = [];
+  $("a[href]").each((_, element) => {
+    const href = $(element).attr("href");
+    if (!href) return;
+    let u: URL | null;
+    try {
+      u = allowedUrl(new URL(href, page).href, allowedHosts);
+    } catch {
+      return;
+    }
+    if (!u) return;
+    for (const key of ["_pos", "_sid", "_ss"]) u.searchParams.delete(key);
+    if (
+      u.pathname !== new URL(page).pathname &&
+      !u.search &&
+      (/\/(product|products|libro|libros)\//i.test(u.pathname) ||
+        (isbn && u.pathname.includes(isbn)))
+    )
+      links.push(u.href);
+  });
+  return [...new Set(links)];
+}
+export function productOffers(
+  html: string,
+  page: string,
+  isbn: string,
+  store: string,
+  checkedAt: string,
+): Offer[] {
+  const host = new URL(page).hostname;
+  const products = structuredProducts(html);
   const results: Offer[] = [];
   for (const product of products) {
     const identity = [product.isbn, product.gtin13, product.gtin, product.sku]
@@ -151,6 +184,14 @@ export function productOffers(
       ? product.offers
       : [product.offers];
     for (const offer of offers.slice(0, 30)) {
+      const offerIsbn = [offer?.isbn, offer?.gtin13, offer?.gtin, offer?.sku]
+        .map((v) =>
+          typeof v === "string" || typeof v === "number"
+            ? isbn13(String(v))
+            : "",
+        )
+        .filter(Boolean);
+      if (offerIsbn.length && !offerIsbn.includes(isbn)) continue;
       if (
         !offer ||
         offer.priceCurrency !== "CLP" ||
@@ -245,26 +286,12 @@ export async function compareStores(
           checkedAt,
         );
         if (!offers.length) {
-          const $ = load(html);
-          const links: string[] = [];
-          $("a[href]").each((_, element) => {
-            const href = $(element).attr("href");
-            if (!href) return;
-            try {
-              const u = allowedUrl(new URL(href, searchUrl).href, allowedHosts);
-              if (
-                u &&
-                u.pathname !== new URL(searchUrl).pathname &&
-                !u.search &&
-                (u.pathname.includes(isbn) ||
-                  /\/(product|products|libro|libros)\//i.test(u.pathname))
-              )
-                links.push(u.href);
-            } catch {
-              /* Ignore malformed links. */
-            }
-          });
-          for (const link of [...new Set(links)].slice(0, 2)) {
+          for (const link of productLinks(
+            html,
+            searchUrl,
+            allowedHosts,
+            isbn,
+          ).slice(0, 2)) {
             permitted(link);
             const page = await sourceText(link, allowedHosts, fetcher);
             offers.push(

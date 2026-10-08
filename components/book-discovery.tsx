@@ -115,6 +115,12 @@ export default function BookDiscovery({
   const advice = recommend(editions, preference, prices);
   const comparison = prices[selectedIsbn];
   const lowest = cheapest(comparison);
+  const availableStores =
+    comparison?.stores.filter((store) =>
+      store.offers.some(
+        (offer) => offer.available === true && offer.isbn === comparison.isbn,
+      ),
+    ).length || 0;
   return (
     <section className="book-discovery" aria-label="Buscar ediciones y precios">
       <p className="discovery-help">
@@ -150,7 +156,8 @@ export default function BookDiscovery({
         )}
       {partial && (
         <p role="status">
-          Un catálogo no respondió. Estos resultados pueden estar incompletos.
+          Algunas fuentes no respondieron. Estos resultados pueden estar
+          incompletos.
         </p>
       )}
       {!!editions.length && (
@@ -317,7 +324,9 @@ export default function BookDiscovery({
                           : "Stock sin confirmar"}
                       {lowest?.url === offer.url &&
                       lowest?.price === offer.price
-                        ? " · Menor precio verificado para este ISBN"
+                        ? availableStores > 1
+                          ? " · Menor precio entre las fuentes que respondieron"
+                          : " · Única fuente con oferta disponible obtenida"
                         : ""}
                     </p>
                     <p className="offer-date">

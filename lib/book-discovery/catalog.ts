@@ -1,6 +1,7 @@
 import { load } from "cheerio";
 import { catalogJson } from "./network";
-import { isbn13, type Edition } from "./shared";
+import { isbn13, spanish, type Edition } from "./shared";
+import { searchContrapunto } from "./retailer-catalog";
 
 const text = (v: unknown, max = 240) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
@@ -141,31 +142,57 @@ export async function searchCatalog(
   );
   google.searchParams.set("maxResults", "8");
   google.searchParams.set("printType", "books");
-  const open = new URL("https://openlibrary.org/search.json");
-  open.searchParams.set(isbn ? "isbn" : "title", isbn || query);
-  open.searchParams.set("limit", "3");
-  open.searchParams.set("fields", "title,author_name,edition_key");
-  const [g, o] = await Promise.allSettled([
-    catalogJson(google.href, fetcher).then((data) => {
-      if (
-        !data ||
-        data.error ||
-        (!Array.isArray(data.items) && data.totalItems !== 0)
-      )
-        throw new Error("Invalid catalog response");
-      return data;
-    }),
-    catalogJson(open.href, fetcher).then((data) => {
-      if (!Array.isArray(data?.docs))
-        throw new Error("Invalid catalog response");
-      return data;
-    }),
-  ]);
-  let editions: Edition[] =
-    g.status === "fulfilled" ? googleEditions(g.value) : [];
+  const authorNames = new Map<string, Promise<string>>();
   let openFailed = false;
-  if (o.status === "fulfilled" && Array.isArray(o.value?.docs)) {
-    const candidates = o.value.docs
+  const editionWithAuthors = async (value: any, doc: any = {}) => {
+    let names: string[] = [];
+    const keys = (Array.isArray(value?.authors) ? value.authors : [])
+      .map((a: any) => text(a?.key))
+      .filter((key: string) => /^\/authors\/OL\d+A$/.test(key))
+      .slice(0, 3);
+    if (keys.length) {
+      names = await Promise.all(
+        keys.map((key: string) => {
+          if (!authorNames.has(key))
+            authorNames.set(
+              key,
+              catalogJson(`https://openlibrary.org${key}.json`, fetcher)
+                .then((author) => text(author?.name))
+                .catch(() => {
+                  openFailed = true;
+                  return "";
+                }),
+            );
+          return authorNames.get(key)!;
+        }),
+      );
+    } else if (Array.isArray(value?.author)) {
+      names = value.author.map((name: unknown) => text(name));
+    } else if (Array.isArray(doc.author_name) && doc.author_name.length === 1) {
+      // Work-wide contributors are not necessarily authors of this edition.
+      names = doc.author_name.map((name: unknown) => text(name));
+    }
+    return openEdition(value, { author_name: names.filter(Boolean) });
+  };
+  const openLookup = async (): Promise<Edition[]> => {
+    if (isbn) {
+      // Search results list every edition of a work, not just the requested ISBN.
+      const value = await catalogJson(
+        `https://openlibrary.org/isbn/${isbn}.json`,
+        fetcher,
+      );
+      if (!/^\/books\/OL\d+M$/.test(value?.key || ""))
+        throw new Error("Invalid edition response");
+      const result = await editionWithAuthors(value);
+      return result ? [result] : [];
+    }
+    const open = new URL("https://openlibrary.org/search.json");
+    open.searchParams.set("title", query);
+    open.searchParams.set("limit", "3");
+    open.searchParams.set("fields", "title,author_name,edition_key");
+    const data = await catalogJson(open.href, fetcher);
+    if (!Array.isArray(data?.docs)) throw new Error("Invalid catalog response");
+    const candidates = data.docs
       .slice(0, 3)
       .flatMap((doc: any) =>
         (Array.isArray(doc.edition_key) ? doc.edition_key : [])
@@ -178,7 +205,7 @@ export async function searchCatalog(
       .slice(0, 4);
     const details = await Promise.allSettled(
       candidates.map(async ({ doc, id }: any) =>
-        openEdition(
+        editionWithAuthors(
           await catalogJson(
             `https://openlibrary.org/books/${id}.json`,
             fetcher,
@@ -187,14 +214,34 @@ export async function searchCatalog(
         ),
       ),
     );
-    editions.push(
-      ...details.flatMap((r) =>
-        r.status === "fulfilled" && r.value ? [r.value] : [],
-      ),
+    openFailed ||= details.some((result) => result.status === "rejected");
+    return details.flatMap((result) =>
+      result.status === "fulfilled" && result.value ? [result.value] : [],
     );
-    openFailed = details.some((r) => r.status === "rejected");
-  }
-  if (g.status === "rejected" && o.status === "rejected")
+  };
+  const [g, o, local] = await Promise.allSettled([
+    catalogJson(google.href, fetcher).then((data) => {
+      if (
+        !data ||
+        data.error ||
+        (!Array.isArray(data.items) && data.totalItems !== 0)
+      )
+        throw new Error("Invalid catalog response");
+      return googleEditions(data);
+    }),
+    openLookup(),
+    searchContrapunto(query, fetcher),
+  ]);
+  const editions = [
+    ...(local.status === "fulfilled" ? local.value.editions : []),
+    ...(g.status === "fulfilled" ? g.value : []),
+    ...(o.status === "fulfilled" ? o.value : []),
+  ];
+  if (
+    g.status === "rejected" &&
+    o.status === "rejected" &&
+    local.status === "rejected"
+  )
     throw new Error(
       "No pudimos consultar los catálogos. Puedes completar el libro manualmente y reintentar.",
     );
@@ -224,7 +271,14 @@ export async function searchCatalog(
       });
   }
   return {
-    editions: [...unique.values()].slice(0, 10),
-    partial: g.status === "rejected" || o.status === "rejected" || openFailed,
+    editions: [...unique.values()]
+      .sort((a, b) => Number(spanish(b.language)) - Number(spanish(a.language)))
+      .slice(0, 10),
+    partial:
+      g.status === "rejected" ||
+      o.status === "rejected" ||
+      openFailed ||
+      local.status === "rejected" ||
+      local.value.partial,
   };
 }

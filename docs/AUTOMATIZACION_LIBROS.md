@@ -1,12 +1,12 @@
 # Búsqueda de libros y comparación de ediciones
 
-**Estado: propuesta implementada y comprobada localmente. No publicada en producción.**
+**Estado: implementada; autocompletado y oferta de Contrapunto comprobados con fuentes reales el 8 de octubre de 2026. Pendiente de migración 003 y publicación en producción.**
 
 La rama `feature/book-discovery` parte de la versión original que está publicada. El rediseño anterior queda separado. Esta mejora conserva la única propietaria, RLS, las reservas de 7/14 días, el bucket privado y los enlaces externos de vaquitas.
 
 ## Flujo
 
-1. Amanda escribe un título o ISBN en **Agregar libro**. Tras una pausa breve, se consultan Google Books y Open Library.
+1. Amanda escribe un título o ISBN en **Agregar libro**. Tras una pausa breve, se consultan Google Books, Open Library y fichas públicas de Contrapunto. La búsqueda por ISBN usa la edición exacta de Open Library; sus colaboradores no se toman de otras ediciones de la obra. Las ediciones que indican español aparecen primero.
 2. Se muestran fichas de ediciones con autor, portada, editorial, año, idioma, formato, traducción y páginas cuando la fuente los proporciona. Amanda elige la edición; los campos se completan y siguen siendo editables. No se adivina la saga o una categoría de su lista personal.
 3. Elegir una edición con ISBN inicia la consulta de precios. Solo se aceptan datos estructurados con ISBN coincidente, moneda CLP y precio entero. Tapa dura, bolsillo y traducciones con distintos ISBN no se mezclan.
 4. Se muestran librería, stock declarado, fecha de consulta y enlace. **Usar este precio y link** copia una oferta al formulario; no realiza una compra. Las ofertas sin stock confirmado no se declaran como la más económica disponible.
@@ -27,15 +27,28 @@ Los catálogos y ofertas del navegador son **simulados**, con datos ficticios. A
 
 ## Lo pendiente antes de publicar
 
-El entorno Codex bloquea los dominios externos con **403 en el proxy**, antes de contactar a las fuentes. Se guardó un borrador de red con los dominios de catálogos, portadas y las cuatro librerías. Guardarlo no cambia por sí solo la red en ejecución.
+La configuración del entorno fue publicada y su copia de trabajo se restauró. Se confirmó acceso real a las fuentes. La prueba distingue las siguientes situaciones:
 
-Por este bloqueo **no se han verificado en vivo** los catálogos, las URLs de búsqueda ni el markup comercial de Penguin Libros, Antártica, Buscalibre y Contrapunto. Sus conectores son experimentales: leen JSON-LD público y omiten resultados sin identidad/precio verificables. No se garantiza que esas cuatro webs publiquen información utilizable ni que permitan consultas automáticas. Después de habilitar la red hay que probar ISBN reales y ajustar o sustituir cada conector por una API autorizada si hace falta. No se habilitará una fuente que requiera evitar sus bloqueos.
+| Fuente | Resultado observado el 8 de octubre de 2026 |
+| --- | --- |
+| Open Library | Búsqueda y fichas reales por título/ISBN disponibles. |
+| Google Books | HTTP 429: límite de consultas; la búsqueda continúa con las otras fuentes. |
+| Contrapunto | Fichas de ediciones y una oferta CLP con ISBN y stock comprobados. |
+| Penguin Libros | La búsqueda automática de la aplicación está prohibida por sus reglas generales de robots.txt. Se conserva el enlace para consulta humana. |
+| Buscalibre | La búsqueda automática de la aplicación está prohibida por sus reglas generales de robots.txt. Se conserva el enlace para consulta humana. |
+| Antártica | HTTP 403 al consultar las reglas de rastreo con el identificador de la aplicación; no se solicitaron productos después del rechazo. |
+
+**No hay una comparación automática completa entre las cuatro librerías.** La interfaz identifica las fuentes bloqueadas y no inventa sus precios. Si solo se obtiene una oferta disponible, la llama única fuente obtenida; no asegura que sea la más barata del mercado. Para automatizar las otras tiendas se necesita una API o integración autorizada y comprobarla. No se cambió de identidad para eludir restricciones.
+
+La consulta por título encontró varias ediciones reales de *Orgullo y prejuicio* con ISBN distintos. La edición Austral `9789566180777` permitió completar Jane Austen, portada, español, tapa dura y 352 páginas, y consultar una oferta de Contrapunto. No se inventaron año ni traductor ausentes. Los catálogos externos pueden contener errores: todos los campos siguen siendo editables antes de guardar. [La evidencia de consultas reales](evidencia/buscador-real/README.md) separa los datos reales de la cuenta/base aisladas usadas para probar la interfaz.
 
 Antes de incorporar la rama a `main`:
 
-1. Aplicar el borrador de red del entorno Codex y verificar fuentes reales; conservar claramente las que no respondan.
+1. Mantener la cobertura limitada descrita arriba; no anunciar comparación completa entre cuatro tiendas. El entorno y las consultas reales ya se comprobaron.
 2. Ejecutar **una sola vez** el contenido de `supabase/migrations/003_book_editions.sql` en el SQL Editor del Supabase real, tras las migraciones 001 y 002 ya completadas. Agrega columnas con valores vacíos/nulos para los libros existentes. No repite las migraciones iniciales ni borra datos.
 3. Incorporar el código, desplegar y probar con la cuenta real: importación de una edición, elección de oferta y datos guardados. Mantener `SITE_URL` con el dominio principal y aplicar Redeploy si cambian variables.
+
+La fuente comercial comprobada lee HTML/JSON-LD y la ficha bibliográfica visible; los demás conectores continúan limitados por sus fuentes. No se ejecuta JavaScript de las tiendas ni se evita un captcha/bloqueo.
 
 El proyecto no necesita una clave de IA, `service_role` ni nuevas variables para estas consultas públicas. Las APIs gratuitas pueden imponer sus propios límites. Los resultados se reutilizan hasta 5 minutos para catálogos y 10 minutos para ofertas, en memoria de cada instancia. Los precios son una instantánea al consultar: no hay cron ni actualización permanente del precio guardado. Envío, promociones no descritas en los datos y disponibilidad final se comprueban en la tienda.
 
@@ -71,3 +84,17 @@ PLAYWRIGHT_MODULE=/tmp/amanda-browser-deps/node_modules/playwright/index.mjs npm
 ```
 
 `BROWSER_EXECUTABLE` permite usar un Chromium instalado; `TEST_ARTIFACT_DIR` elige dónde guardar las capturas. Los comandos anteriores usan sintaxis Bash. Los archivos de evidencia documentan exactamente la simulación y sus límites.
+
+## Prueba opcional con fuentes externas reales
+
+`npm test` sigue siendo determinista y no consulta Internet: ejecuta 52 pruebas. `test:browser-discovery` usa catálogos/ofertas simulados para comprobar fallos y persistencia. La prueba adicional `test:live-discovery` consulta fuentes reales desde una web local y deja **sin guardar** el libro del formulario. Puede fallar si cambian los datos, el stock, la red o el markup de la tienda.
+
+En Codex con Node.js 24, iniciar el servidor de prueba con `NODE_USE_ENV_PROXY=1 NO_PROXY=127.0.0.1,localhost` además de las variables de fixture indicadas arriba, para usar el proxy del entorno en las consultas externas. En Vercel no se necesitan estas dos opciones del entorno Codex. Ejecutar las pruebas de navegador por separado, contra la fixture, nunca contra producción:
+
+```bash
+NODE_USE_ENV_PROXY=1 NO_PROXY=127.0.0.1,localhost PLAYWRIGHT_MODULE=/opt/codex/cua_node/lib/node_modules/playwright-core/index.mjs BROWSER_EXECUTABLE=/usr/bin/chromium npm run test:live-discovery
+```
+
+Ese comando usa el Chromium y Playwright presentes en este entorno. La alternativa para instalarlos fuera del proyecto está en la sección anterior. Las capturas reales documentan una consulta concreta, no una garantía permanente de precio, disponibilidad o cobertura. No se compró nada ni se modificó Supabase real.
+
+En la prueba real, solo se transportan las portadas reales a Chromium mediante el proxy HTTPS de Node.js; no se sustituyen por imágenes ficticias ni se interceptan las API de catálogo/precios. La biblioteca y el acceso permanecen aislados.
