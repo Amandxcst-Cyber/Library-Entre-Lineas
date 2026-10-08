@@ -14,11 +14,7 @@
   "supabase_column_read": {
     "method": "GET",
     "table": "books",
-    "select": [
-      "edition_note",
-      "edition_extras",
-      "edition_options"
-    ],
+    "select": ["edition_note", "edition_extras", "edition_options"],
     "limit": 0,
     "status": 200
   },
