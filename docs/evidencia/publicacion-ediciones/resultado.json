@@ -1,0 +1,29 @@
+{
+  "site": "https://library-entre-lineas.vercel.app",
+  "http_status": 200,
+  "login_http_status": 200,
+  "scripts_checked": 10,
+  "feature_markers": [
+    "Ediciones y compras en Chile",
+    "Mi edici\u00f3n elegida",
+    "Otras versiones para comparar"
+  ],
+  "new_feature_served": true,
+  "checkedAt": "2026-10-08T19:42:17.148505+00:00",
+  "code_commit": "b1336fe731722ba7cbce93fb664e16437c8115a6",
+  "supabase_column_read": {
+    "method": "GET",
+    "table": "books",
+    "select": [
+      "edition_note",
+      "edition_extras",
+      "edition_options"
+    ],
+    "limit": 0,
+    "status": 200
+  },
+  "real_writes": false,
+  "pending": [
+    "Owner-account save and public display of a chosen edition and alternatives"
+  ]
+}

@@ -1,6 +1,6 @@
 # Edición favorita, alternativas y compras en Chile
 
-Implementado y comprobado localmente el 8 de octubre de 2026. Código incorporado a `main` desde `feature/chile-edition-comparison` tras la confirmación de Amanda de que la migración 004 terminó correctamente en Supabase. Amanda confirmó la ejecución y una consulta anónima de solo lectura a las tres columnas nuevas (`select=edition_note,edition_extras,edition_options&limit=0`) respondió HTTP 200. No se realizaron escrituras ni se probó su cuenta real desde este entorno. La búsqueda anterior publicada ya funcionaba según sus capturas y confirmación. Pendiente: verificar que Vercel publique esta actualización y probar el guardado de alternativas con su cuenta real.
+Implementado y comprobado localmente el 8 de octubre de 2026. Código incorporado a `main` desde `feature/chile-edition-comparison` tras la confirmación de Amanda de que la migración 004 terminó correctamente en Supabase. Amanda confirmó la ejecución y una consulta anónima de solo lectura a las tres columnas nuevas (`select=edition_note,edition_extras,edition_options&limit=0`) respondió HTTP 200. No se realizaron escrituras ni se probó su cuenta real desde este entorno. La búsqueda anterior publicada ya funcionaba según sus capturas y confirmación. Publicación comprobada: la web y `/login` responden HTTP 200 y los archivos JavaScript públicos contienen la nueva comparación de ediciones. Pendiente: probar el guardado de alternativas con la cuenta real de Amanda.
 
 ## Cómo se usa
 
@@ -30,7 +30,7 @@ Consulta real de “Boulevard”: se obtuvieron los libros 1, 2 y 3 de Montena e
 
 **Completado según confirmación de Amanda:** migración `004_chile_edition_options.sql` ejecutada correctamente en su Supabase existente. No repetir 001, 002, 003 ni 004 en esa base. La prueba local verificó conservación de libros y una reserva activa; Amanda confirmó la ejecución real y se verificó por lectura que las tres columnas existen en la API de Supabase.
 
-El código se incorpora a main. **Siguiente paso:** comprobar que el nuevo despliegue de Vercel termina en Ready. Verificar con la cuenta real: elegir favorita, agregar una alternativa del mismo libro, guardar, y abrir la ficha en una ventana sin sesión. Las pruebas automáticas usan exclusivamente la base aislada. No requiere nuevas variables ni una clave de IA.
+El código se incorpora a main. **Despliegue comprobado mediante lecturas públicas:** portada y login HTTP 200; nuevas opciones de comparación presentes en JavaScript servido. **Siguiente paso:** verificar con la cuenta real: elegir favorita, agregar una alternativa del mismo libro, guardar, y abrir la ficha en una ventana sin sesión. Las pruebas automáticas usan exclusivamente la base aislada. No requiere nuevas variables ni una clave de IA.
 
 ## Verificación
 

@@ -115,4 +115,4 @@ Un resultado exitoso de compilación local o un push a GitHub no confirma que Ve
 
 ## Comparación pública de variantes
 
-La nueva rama `feature/chile-edition-comparison` conserva esta implementación y agrega edición favorita, motivo, extras y alternativas con instantáneas de precios por ISBN. **La migración 004 fue ejecutada según confirmación de Amanda; el código se incorpora a main. Falta verificar el nuevo despliegue.** El primer paso y la verificación están en [EDICIONES_CHILE.md](EDICIONES_CHILE.md). La publicación histórica descrita arriba corresponde al buscador anterior, que Amanda ya confirmó funcionando.
+La nueva rama `feature/chile-edition-comparison` conserva esta implementación y agrega edición favorita, motivo, extras y alternativas con instantáneas de precios por ISBN. **La migración 004 fue ejecutada según confirmación de Amanda; el código se incorpora a main. Se verificó que la web sirve la mejora; falta probar el guardado con la cuenta real.** El primer paso y la verificación están en [EDICIONES_CHILE.md](EDICIONES_CHILE.md). La publicación histórica descrita arriba corresponde al buscador anterior, que Amanda ya confirmó funcionando.
