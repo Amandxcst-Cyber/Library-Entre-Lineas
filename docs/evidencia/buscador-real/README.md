@@ -11,4 +11,4 @@ La cuenta, la base SQL y el fondo de la biblioteca usan datos de prueba aislados
 
 La consulta obtuvo una oferta de Contrapunto. Penguin Libros y Buscalibre bloquearon la búsqueda automática según sus reglas generales; Antártica respondió HTTP 403. Google Books respondió HTTP 429 y el buscador continuó con sus otras fuentes. Los registros del navegador conservaron seis libros sintéticos, sin cambios.
 
-La comprobación es adicional a las 52 pruebas deterministas, TypeScript, formato, build y la prueba de navegador con escenarios simulados. No demuestra el funcionamiento del despliegue real: la migración 003 y la publicación siguen pendientes.
+La comprobación es adicional a las 52 pruebas deterministas, TypeScript, formato, build y la prueba de navegador con escenarios simulados. No demuestra el funcionamiento del despliegue real: Amanda confirmó la migración 003 después de esta prueba; la publicación y el uso con la cuenta real siguen pendientes de verificación.

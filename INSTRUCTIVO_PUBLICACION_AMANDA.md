@@ -1,6 +1,6 @@
 # Amanda entre líneas · Instructivo de publicación
 
-> **Actualización para el buscador automático:** la versión original en `main` ya está desplegada y Amanda confirmó el acceso a su cuenta. La rama `feature/book-discovery` ya comprobó fuentes externas con cobertura limitada y requiere aplicar **solo** `supabase/migrations/003_book_editions.sql` antes de incorporarla a producción. Las migraciones 001 y 002 ya ejecutadas no deben repetirse. Consulta [la guía de la mejora y su evidencia](docs/AUTOMATIZACION_LIBROS.md). Los pasos siguientes se conservan como referencia para una instalación nueva.
+> **Actualización del buscador automático:** fuentes reales comprobadas con cobertura limitada y migración 003 ejecutada según confirmación de Amanda el 8 de octubre de 2026. Se incorpora el código desde `feature/book-discovery` a `main`; queda verificar que Vercel publique el cambio y probar con la cuenta real. No repetir 001, 002 ni 003 en la base ya configurada. Consulta [la guía de la mejora y su evidencia](docs/AUTOMATIZACION_LIBROS.md). Los pasos siguientes son referencia para una instalación nueva.
 
 Esta guía corresponde al proyecto **amanda-entre-lineas-independiente.zip**, versión 1.1.0: libros, otros regalitos y vaquitas. Al terminar tendrás una dirección pública para Instagram y un acceso privado con tu correo y contraseña. La publicación se hace en tus propias cuentas.
 

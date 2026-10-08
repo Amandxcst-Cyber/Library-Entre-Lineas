@@ -1,6 +1,6 @@
 # Búsqueda de libros y comparación de ediciones
 
-**Estado: implementada; autocompletado y oferta de Contrapunto comprobados con fuentes reales el 8 de octubre de 2026. Pendiente de migración 003 y publicación en producción.**
+**Estado: implementada; autocompletado y oferta de Contrapunto comprobados con fuentes reales el 8 de octubre de 2026. Migración 003 ejecutada según confirmación de Amanda el 8 de octubre de 2026; pendiente de verificar el despliegue y el uso con su cuenta real.**
 
 La rama `feature/book-discovery` parte de la versión original que está publicada. El rediseño anterior queda separado. Esta mejora conserva la única propietaria, RLS, las reservas de 7/14 días, el bucket privado y los enlaces externos de vaquitas.
 
@@ -42,11 +42,15 @@ La configuración del entorno fue publicada y su copia de trabajo se restauró. 
 
 La consulta por título encontró varias ediciones reales de *Orgullo y prejuicio* con ISBN distintos. La edición Austral `9789566180777` permitió completar Jane Austen, portada, español, tapa dura y 352 páginas, y consultar una oferta de Contrapunto. No se inventaron año ni traductor ausentes. Los catálogos externos pueden contener errores: todos los campos siguen siendo editables antes de guardar. [La evidencia de consultas reales](evidencia/buscador-real/README.md) separa los datos reales de la cuenta/base aisladas usadas para probar la interfaz.
 
-Antes de incorporar la rama a `main`:
+## Incorporación y verificación de producción
+
+La versión comprobada se incorpora desde `feature/book-discovery` a `main` para que la integración Git de Vercel publique la actualización. El entorno Codex aún no permite consultar el dominio de Vercel ni el Supabase real: esas verificaciones directas siguen pendientes. La confirmación de la migración proviene de Amanda, no de una consulta de este entorno.
+
+Pasos de publicación:
 
 1. Mantener la cobertura limitada descrita arriba; no anunciar comparación completa entre cuatro tiendas. El entorno y las consultas reales ya se comprobaron.
-2. Ejecutar **una sola vez** el contenido de `supabase/migrations/003_book_editions.sql` en el SQL Editor del Supabase real, tras las migraciones 001 y 002 ya completadas. Agrega columnas con valores vacíos/nulos para los libros existentes. No repite las migraciones iniciales ni borra datos.
-3. Incorporar el código, desplegar y probar con la cuenta real: importación de una edición, elección de oferta y datos guardados. Mantener `SITE_URL` con el dominio principal y aplicar Redeploy si cambian variables.
+2. **Completado según confirmación de Amanda:** migración `003_book_editions.sql` ejecutada en el Supabase real. No repetir 001, 002 ni 003 en esa base. Para una instalación nueva, aplicar las migraciones en orden, una sola vez cada una. La 003 agrega columnas con valores vacíos/nulos y conserva datos.
+3. Esperar que Vercel publique el commit de `main` y probar con la cuenta real: importación de una edición, elección de oferta y datos guardados. Mantener `SITE_URL` con el dominio principal y aplicar Redeploy si cambian variables.
 
 La fuente comercial comprobada lee HTML/JSON-LD y la ficha bibliográfica visible; los demás conectores continúan limitados por sus fuentes. No se ejecuta JavaScript de las tiendas ni se evita un captcha/bloqueo.
 
@@ -98,3 +102,12 @@ NODE_USE_ENV_PROXY=1 NO_PROXY=127.0.0.1,localhost PLAYWRIGHT_MODULE=/opt/codex/c
 Ese comando usa el Chromium y Playwright presentes en este entorno. La alternativa para instalarlos fuera del proyecto está en la sección anterior. Las capturas reales documentan una consulta concreta, no una garantía permanente de precio, disponibilidad o cobertura. No se compró nada ni se modificó Supabase real.
 
 En la prueba real, solo se transportan las portadas reales a Chromium mediante el proxy HTTPS de Node.js; no se sustituyen por imágenes ficticias ni se interceptan las API de catálogo/precios. La biblioteca y el acceso permanecen aislados.
+
+### Comprobación después del despliegue
+
+1. En Vercel, confirmar que el último despliegue de Production usa el commit de esta actualización y muestra **Ready**.
+2. Entrar a `/admin`, abrir **Agregar libro** y escribir `9789566180777` como ejemplo de la consulta real comprobada. Seleccionar la edición y revisar autor, portada, idioma y formato. El título también sirve para buscar otras ediciones.
+3. Si hay oferta con stock declarado, copiar precio/enlace; revisar los campos y guardar solo si Amanda quiere agregar ese libro. Reabrir su ficha y comprobar que los datos de edición se conservan. Los precios pueden cambiar o no estar disponibles.
+4. Comprobar que la wishlist, biblioteca, otros regalos y vaquitas conservan sus datos. Las pruebas de reservas no deben crear compromisos reales en producción.
+
+Un resultado exitoso de compilación local o un push a GitHub no confirma que Vercel terminó de publicar. Si falla el despliegue, revisar el error exacto del build; no volver a ejecutar migraciones que ya terminaron correctamente.
