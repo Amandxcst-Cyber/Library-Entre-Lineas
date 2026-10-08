@@ -30,6 +30,74 @@ export type StoreResult = {
   offers: Offer[];
 };
 export type Comparison = { isbn: string; stores: StoreResult[] };
+export type EditionOption = {
+  edition: Edition;
+  comparison: Comparison | null;
+  extras: string;
+  note: string;
+};
+/** Only local store purchase/search links. Bibliographic sources remain separate. */
+export function chilePurchaseUrl(value: string) {
+  try {
+    const u = new URL(value);
+    return (
+      u.protocol === "https:" &&
+      !u.username &&
+      !u.password &&
+      !u.port &&
+      ([
+        "antartica.cl",
+        "www.antartica.cl",
+        "buscalibre.cl",
+        "www.buscalibre.cl",
+        "contrapunto.cl",
+        "www.contrapunto.cl",
+      ].includes(u.hostname) ||
+        (u.hostname === "www.penguinlibros.com" &&
+          u.pathname.startsWith("/cl/")))
+    );
+  } catch {
+    return false;
+  }
+}
+export function editionFeatures(edition: Pick<Edition, "title" | "format">) {
+  const value = edition.title + " " + edition.format;
+  return [
+    /ilustrad[ao]/i.test(value) ? "Ilustrada" : "",
+    /bolsillo|pocket/i.test(value) ? "De bolsillo" : "",
+    /cantos pintados/i.test(value) ? "Cantos pintados" : "",
+    /(?:edici[oó]n|ed\.)\s*limitada/i.test(value) ? "Edición limitada" : "",
+  ].filter(Boolean);
+}
+export function editionReasons(edition: Edition, extras = "") {
+  const reasons: string[] = [];
+  if (/tapa dura|hardcover|hardback|cartoné/i.test(edition.format))
+    reasons.push(
+      "Tapa dura: una opción para quien prefiere una cubierta rígida.",
+    );
+  if (/tapa blanda|paperback|softcover|rústica/i.test(edition.format))
+    reasons.push(
+      "Tapa blanda: una alternativa a la cubierta rígida; compara su precio para decidir.",
+    );
+  if (editionFeatures(edition).includes("Ilustrada"))
+    reasons.push(
+      "La ficha la identifica como ilustrada: aporta una experiencia visual además del texto.",
+    );
+  if (editionFeatures(edition).includes("De bolsillo"))
+    reasons.push(
+      "La ficha indica formato de bolsillo: una opción si buscas una edición compacta.",
+    );
+  if (edition.translator)
+    reasons.push(
+      `Traducción identificada: ${edition.translator}. Su calidad requiere revisar la traducción, no solo la editorial.`,
+    );
+  if (extras) reasons.push(`Detalles anotados por Amanda: ${extras}`);
+  if (!reasons.length)
+    reasons.push(
+      "Faltan detalles para recomendar este formato. Revisa la ficha de la librería.",
+    );
+  return reasons;
+}
 export type Preference = "reading" | "collecting" | "translation";
 
 export function isbn13(value: string): string {
@@ -114,4 +182,31 @@ export function recommend(
     limitations:
       "Orientación basada en los datos del catálogo, no en una lectura de la traducción. Los precios sin consultar y el envío no se comparan. No se presume que más páginas o una edición más reciente sean mejores.",
   };
+}
+
+export function sameWork(
+  a: Pick<Edition, "title" | "author">,
+  b: Pick<Edition, "title" | "author">,
+) {
+  const normalized = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  const title = (value: string) =>
+    normalized(value)
+      .replace(/[\[(].*?[\])]/g, " ")
+      .replace(/\b(?:edicion|ed\.)\s.*$/, "")
+      .replace(
+        /\b(?:ilustrad[ao]|tapa dura|tapa blanda|de bolsillo|bolsillo|hardcover|paperback|rustica|cartone)\b/g,
+        " ",
+      )
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  return (
+    !!a.author.trim() &&
+    normalized(a.author).replace(/[^a-z0-9]/g, "") ===
+      normalized(b.author).replace(/[^a-z0-9]/g, "") &&
+    title(a.title) === title(b.title)
+  );
 }

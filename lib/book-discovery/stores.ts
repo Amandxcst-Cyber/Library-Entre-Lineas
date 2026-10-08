@@ -304,7 +304,13 @@ export async function compareStores(
           store: store.name,
           searchUrl,
           status: offers.length ? "verified" : "no_match",
-          offers,
+          offers: offers
+            .sort(
+              (a, b) =>
+                Number(b.available === true) - Number(a.available === true) ||
+                a.price - b.price,
+            )
+            .slice(0, 4),
         };
       } catch (e) {
         return {

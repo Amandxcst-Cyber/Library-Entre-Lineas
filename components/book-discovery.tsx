@@ -5,6 +5,8 @@ import {
   cheapest,
   isbn13,
   recommend,
+  spanish,
+  editionFeatures,
   type Comparison,
   type Edition,
   type Offer,
@@ -17,11 +19,15 @@ export default function BookDiscovery({
   initialIsbn,
   onEdition,
   onOffer,
+  onAlternative,
+  onComparison,
 }: {
   query: string;
   initialIsbn: string;
   onEdition: (edition: Edition) => void;
   onOffer: (offer: Offer) => void;
+  onAlternative: (edition: Edition) => void;
+  onComparison: (comparison: Comparison) => void;
 }) {
   const [editions, setEditions] = useState<Edition[]>([]);
   const [selected, setSelected] = useState<Edition | null>(null);
@@ -57,7 +63,9 @@ export default function BookDiscovery({
         if (!r.ok)
           throw new Error(result.error || "No pudimos buscar el libro.");
         if (!controller.signal.aborted) {
-          setEditions(result.editions);
+          setEditions(
+            result.editions.filter((e: Edition) => spanish(e.language)),
+          );
           setPartial(result.partial);
           setSearched(true);
         }
@@ -114,6 +122,12 @@ export default function BookDiscovery({
   }, [selectedIsbn, priceRetry]);
   const advice = recommend(editions, preference, prices);
   const comparison = prices[selectedIsbn];
+  useEffect(() => {
+    if (comparison)
+      onComparison(
+        comparison,
+      ); /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [comparison]);
   const lowest = cheapest(comparison);
   const availableStores =
     comparison?.stores.filter((store) =>
@@ -124,8 +138,9 @@ export default function BookDiscovery({
   return (
     <section className="book-discovery" aria-label="Buscar ediciones y precios">
       <p className="discovery-help">
-        Escribe un título o ISBN y elige una edición: completaremos autor,
-        portada y datos disponibles. Puedes corregirlos antes de guardar.
+        Escribe el nombre del libro: buscaremos versiones en español y compras
+        en Chile. Elige tu edición favorita; completaremos autor, portada y
+        datos disponibles. Puedes corregirlos antes de guardar.
       </p>
       {loading && (
         <p role="status">
@@ -151,7 +166,9 @@ export default function BookDiscovery({
         !selected &&
         !editions.length && (
           <p role="status">
-            Sin resultados todavía. Puedes completar el libro manualmente.
+            Sin ediciones en español identificadas. Puedes completar el libro
+            manualmente; no mostramos versiones de otros idiomas ni presumimos
+            el idioma cuando falta.
           </p>
         )}
       {partial && (
@@ -214,6 +231,7 @@ export default function BookDiscovery({
                         edition.year,
                         edition.language,
                         edition.format,
+                        ...editionFeatures(edition),
                       ]
                         .filter(Boolean)
                         .join(" · ") || "Edición sin detalles confirmados"}
@@ -240,6 +258,20 @@ export default function BookDiscovery({
                     </span>
                   </span>
                 </button>
+                <p className="edition-market">
+                  {edition.source === "Contrapunto"
+                    ? "Ficha de una librería en Chile; precio y stock al consultar."
+                    : "Referencia bibliográfica; compra en Chile por confirmar."}
+                </p>
+                {edition.isbn && edition.isbn !== selectedIsbn && (
+                  <button
+                    type="button"
+                    className="btn outline edition-add"
+                    onClick={() => onAlternative(edition)}
+                  >
+                    Agregar como alternativa
+                  </button>
+                )}
                 {(
                   edition.sources || [
                     { label: edition.source, url: edition.sourceUrl },

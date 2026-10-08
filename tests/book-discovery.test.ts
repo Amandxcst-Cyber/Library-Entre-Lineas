@@ -146,6 +146,7 @@ test("Solo el mismo ISBN combina fuentes y conserva sus referencias", async () =
       title: "Historia",
       isbn_13: [u.includes("OL1M") ? isbn : other],
       physical_format: "Paperback",
+      languages: [{ key: "/languages/spa" }],
     });
   }) as typeof fetch;
   const result = await searchCatalog("Historia", fetcher);
@@ -447,6 +448,7 @@ test("El ISBN de Open Library se consulta directamente sin tomar otra edición d
         title: "Historia",
         isbn_13: [isbn],
         authors: [{ key: "/authors/OL1A" }],
+        languages: [{ key: "/languages/spa" }],
       });
     if (u.includes("/authors/OL1A"))
       return Response.json({ name: "Autora de esta edición" });
@@ -480,6 +482,7 @@ test("Los colaboradores de una obra no se atribuyen a una edición con autores p
       title: "Historia",
       isbn_13: [isbn],
       authors: [{ key: "/authors/OL1A" }],
+      languages: [{ key: "/languages/spa" }],
     });
   }) as typeof fetch;
   const result = await searchCatalog("Historia", fetcher);
@@ -568,4 +571,186 @@ test("El catálogo comercial obtiene HTML y respeta robots antes de consultar pr
       (async () => new Response("User-agent: *\nDisallow: /")) as typeof fetch,
     ),
   );
+});
+
+test("Búsqueda por nombre descarta otros idiomas y el idioma desconocido", async () => {
+  const fetcher = (async (url: any) => {
+    if (String(url).includes("googleapis")) {
+      const parsed = new URL(url);
+      assert.equal(parsed.searchParams.get("langRestrict"), "es");
+      assert.equal(parsed.searchParams.get("country"), "CL");
+      return Response.json({
+        items: ["es", "pol", "ara", ""].map((language, i) => ({
+          id: "language-" + i,
+          volumeInfo: { title: "Historia", authors: ["Autora"], language },
+        })),
+      });
+    }
+    if (String(url).includes("search.json")) return Response.json({ docs: [] });
+    return new Response("User-agent: *\nDisallow: /");
+  }) as typeof fetch;
+  const result = await searchCatalog("Historia", fetcher);
+  assert.deepEqual(
+    result.editions.map((e) => e.language),
+    ["es"],
+  );
+});
+
+test("Las alternativas mantienen ISBN, enlaces de Chile y ofertas del mismo vendedor", async () => {
+  const { editionOptionsSchema } = await import("../lib/validation");
+  const option = {
+    edition,
+    comparison: {
+      isbn,
+      stores: [
+        {
+          store: "Antártica",
+          searchUrl: "https://www.antartica.cl/",
+          status: "verified",
+          offers: [
+            {
+              store: "Antártica",
+              isbn,
+              price: 15990,
+              url: "https://www.antartica.cl/libro",
+              available: true,
+              checkedAt: "2026-10-08T12:00:00Z",
+            },
+          ],
+        },
+      ],
+    },
+    note: "Prefiero esta tapa.",
+    extras: "Prólogo",
+  };
+  assert.equal(editionOptionsSchema.safeParse([option]).success, true);
+  for (const changed of [
+    { ...option, edition: { ...edition, language: "pol" } },
+    { ...option, comparison: { ...option.comparison, isbn: other } },
+    {
+      ...option,
+      comparison: {
+        ...option.comparison,
+        stores: [
+          {
+            ...option.comparison.stores[0],
+            searchUrl: "https://www.penguinlibros.com/es/",
+          },
+        ],
+      },
+    },
+    {
+      ...option,
+      comparison: {
+        ...option.comparison,
+        stores: [
+          {
+            ...option.comparison.stores[0],
+            offers: [{ ...option.comparison.stores[0].offers[0], isbn: other }],
+          },
+        ],
+      },
+    },
+    {
+      ...option,
+      comparison: {
+        ...option.comparison,
+        stores: [
+          {
+            ...option.comparison.stores[0],
+            offers: [
+              {
+                ...option.comparison.stores[0].offers[0],
+                url: "https://www.buscalibre.cl/libro",
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ])
+    assert.equal(editionOptionsSchema.safeParse([changed]).success, false);
+  assert.equal(editionOptionsSchema.safeParse([option, option]).success, false);
+});
+
+test("Diferencias de versión describen datos explícitos sin inventar extras ni mezclar tomos", async () => {
+  const { editionFeatures, editionReasons, sameWork } = await import(
+    "../lib/book-discovery/shared"
+  );
+  assert.deepEqual(
+    editionFeatures({ ...edition, title: "Boulevard 1 (edición ilustrada)" }),
+    ["Ilustrada"],
+  );
+  assert.ok(
+    editionReasons({ ...edition, format: "De bolsillo" }).some((r) =>
+      r.includes("compacta"),
+    ),
+  );
+  assert.ok(
+    !editionReasons(edition).some((r) =>
+      /ilustrad|prologo|mejor editorial/i.test(r),
+    ),
+  );
+  assert.equal(
+    sameWork(
+      { ...edition, title: "Boulevard 1" },
+      { ...edition, title: "Boulevard 1 (edición ilustrada)" },
+    ),
+    true,
+  );
+  assert.equal(
+    sameWork(
+      { ...edition, title: "Boulevard 1" },
+      { ...edition, title: "Boulevard 2" },
+    ),
+    false,
+  );
+});
+
+test("La búsqueda de una obra elige ediciones españolas antes de resolver autores", async () => {
+  const calls: string[] = [];
+  const fetcher = (async (url: any) => {
+    const u = String(url);
+    calls.push(u);
+    if (u.includes("googleapis")) return Response.json({ totalItems: 0 });
+    if (u.includes("contrapunto"))
+      return new Response("User-agent: *\nDisallow: /");
+    if (u.includes("search.json"))
+      return Response.json({
+        docs: [
+          {
+            key: "/works/OL1W",
+            title: "Historia",
+            author_name: ["Autora"],
+            edition_key: ["OL1M"],
+          },
+        ],
+      });
+    if (u.includes("/works/OL1W/editions.json"))
+      return Response.json({
+        entries: [
+          {
+            key: "/books/OL1M",
+            title: "Historia extranjera",
+            isbn_13: [other],
+            languages: [{ key: "/languages/pol" }],
+            authors: [{ key: "/authors/OL9A" }],
+          },
+          {
+            key: "/books/OL2M",
+            title: "Historia",
+            isbn_13: [isbn],
+            languages: [{ key: "/languages/spa" }],
+            publishers: ["Sello español"],
+            physical_format: "Tapa blanda",
+          },
+        ],
+      });
+    throw new Error("Unexpected lookup");
+  }) as typeof fetch;
+  const result = await searchCatalog("Historia", fetcher);
+  assert.equal(result.editions.length, 1);
+  assert.equal(result.editions[0].isbn, isbn);
+  assert.equal(result.editions[0].publisher, "Sello español");
+  assert.ok(!calls.some((u) => u.includes("/authors/OL9A")));
 });

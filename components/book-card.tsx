@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { BookOpen, ExternalLink, Heart } from "lucide-react";
+import BookEditionComparison from "./edition-options";
+import { chilePurchaseUrl } from "@/lib/book-discovery/shared";
 import GiftReservation from "./gift-reservation";
 import { Book, Settings, formatPrice } from "@/lib/types";
 import {
@@ -111,6 +113,7 @@ export default function BookCard({
             {book.description && (
               <p className="detail-description">{book.description}</p>
             )}
+            <BookEditionComparison book={book} />
             <dl className="book-metadata">
               <div>
                 <dt>Precio aproximado</dt>
@@ -119,48 +122,6 @@ export default function BookCard({
                   {book.price !== null ? " CLP" : ""}
                 </dd>
               </div>
-              {book.publisher && (
-                <div>
-                  <dt>Editorial</dt>
-                  <dd>{book.publisher}</dd>
-                </div>
-              )}
-              {book.isbn && (
-                <div>
-                  <dt>ISBN de esta edición</dt>
-                  <dd>{book.isbn}</dd>
-                </div>
-              )}
-              {book.edition_format && (
-                <div>
-                  <dt>Formato</dt>
-                  <dd>{book.edition_format}</dd>
-                </div>
-              )}
-              {book.language && (
-                <div>
-                  <dt>Idioma</dt>
-                  <dd>{book.language}</dd>
-                </div>
-              )}
-              {book.translator && (
-                <div>
-                  <dt>Traducción</dt>
-                  <dd>{book.translator}</dd>
-                </div>
-              )}
-              {book.publication_year && (
-                <div>
-                  <dt>Publicación</dt>
-                  <dd>{book.publication_year}</dd>
-                </div>
-              )}
-              {book.page_count && (
-                <div>
-                  <dt>Páginas</dt>
-                  <dd>{book.page_count}</dd>
-                </div>
-              )}
               <div>
                 <dt>Libro</dt>
                 <dd>{book.saga || "Independiente"}</dd>
@@ -172,7 +133,7 @@ export default function BookCard({
                 </div>
               )}
             </dl>
-            {book.purchase_url && (
+            {book.purchase_url && chilePurchaseUrl(book.purchase_url) && (
               <a
                 className="btn primary full-width"
                 href={book.purchase_url}

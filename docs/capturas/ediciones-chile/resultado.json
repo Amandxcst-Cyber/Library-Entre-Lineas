@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Acceso privado de endpoints",
+    "Búsquedas anteriores canceladas",
+    "Autocompletado de edición",
+    "Comparación con stock y fuente bloqueada",
+    "Datos persistidos por API/SQL",
+    "Alternativas y precios por ISBN guardados",
+    "Favorita y motivo primero ante una alternativa más barata",
+    "Edición manual tras fallo",
+    "Sin desbordamiento móvil/tablet/escritorio"
+  ],
+  "externalSources": "simuladas",
+  "consoleErrors": []
+}

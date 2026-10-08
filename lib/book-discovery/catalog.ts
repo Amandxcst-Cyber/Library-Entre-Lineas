@@ -142,6 +142,8 @@ export async function searchCatalog(
   );
   google.searchParams.set("maxResults", "8");
   google.searchParams.set("printType", "books");
+  google.searchParams.set("langRestrict", "es");
+  google.searchParams.set("country", "CL");
   const authorNames = new Map<string, Promise<string>>();
   let openFailed = false;
   const editionWithAuthors = async (value: any, doc: any = {}) => {
@@ -189,27 +191,61 @@ export async function searchCatalog(
     const open = new URL("https://openlibrary.org/search.json");
     open.searchParams.set("title", query);
     open.searchParams.set("limit", "3");
-    open.searchParams.set("fields", "title,author_name,edition_key");
+    open.searchParams.set("language", "spa");
+    open.searchParams.set("lang", "es");
+    open.searchParams.set(
+      "fields",
+      "key,title,author_name,edition_key,editions,editions.key",
+    );
     const data = await catalogJson(open.href, fetcher);
     if (!Array.isArray(data?.docs)) throw new Error("Invalid catalog response");
-    const candidates = data.docs
-      .slice(0, 3)
-      .flatMap((doc: any) =>
-        (Array.isArray(doc.edition_key) ? doc.edition_key : [])
+    // Work-wide edition_key is not language-filtered. Inspect a bounded page of
+    // concrete editions and choose Spanish records before fetching author details.
+    const groups = await Promise.allSettled(
+      data.docs.slice(0, 2).map(async (doc: any) => {
+        if (/^\/works\/OL\d+W$/.test(doc.key || "")) {
+          const page = await catalogJson(
+            `https://openlibrary.org${doc.key}/editions.json?limit=100`,
+            fetcher,
+          );
+          if (!Array.isArray(page.entries))
+            throw new Error("Invalid edition list");
+          const entries = page.entries
+            .filter(
+              (e: any) =>
+                Array.isArray(e.languages) &&
+                e.languages.some((l: any) => l.key === "/languages/spa"),
+            )
+            .slice(0, 4);
+          return entries.map((value: any) => ({
+            doc,
+            value,
+            id: value.key?.replace("/books/", ""),
+          }));
+        }
+        const keys = doc.editions?.docs?.length
+          ? doc.editions.docs.map((e: any) => e.key?.replace("/books/", ""))
+          : doc.edition_key || [];
+        return keys
           .filter(
             (id: unknown) => typeof id === "string" && /^OL\d+M$/.test(id),
           )
           .slice(0, 2)
-          .map((id: string) => ({ doc, id })),
-      )
-      .slice(0, 4);
+          .map((id: string) => ({ doc, id, value: null }));
+      }),
+    );
+    openFailed ||= groups.some((r) => r.status === "rejected");
+    const candidates = groups
+      .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+      .slice(0, 6);
     const details = await Promise.allSettled(
-      candidates.map(async ({ doc, id }: any) =>
+      candidates.map(async ({ doc, id, value }: any) =>
         editionWithAuthors(
-          await catalogJson(
-            `https://openlibrary.org/books/${id}.json`,
-            fetcher,
-          ),
+          value ||
+            (await catalogJson(
+              `https://openlibrary.org/books/${id}.json`,
+              fetcher,
+            )),
           doc,
         ),
       ),
@@ -247,7 +283,7 @@ export async function searchCatalog(
     );
   const unique = new Map<string, Edition>();
   for (const e of editions) {
-    if (isbn && e.isbn !== isbn) continue;
+    if (!spanish(e.language) || (isbn && e.isbn !== isbn)) continue;
     const key = e.isbn || e.id;
     const previous = unique.get(key);
     if (!previous) unique.set(key, e);

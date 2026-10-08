@@ -1,3 +1,4 @@
+import type { EditionOption } from "./book-discovery/shared";
 export type Status = "wishlist" | "owned" | "archived";
 export type GiftItem = {
   id: string;
@@ -89,6 +90,9 @@ export type Book = {
   language: string;
   translator: string;
   page_count: number | null;
+  edition_note: string;
+  edition_extras: string;
+  edition_options: EditionOption[];
   created_at: string;
   updated_at: string;
   reservation_expires_at?: string | null;

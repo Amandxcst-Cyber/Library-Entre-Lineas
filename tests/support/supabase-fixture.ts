@@ -31,6 +31,7 @@ for (const file of [
   "001_initial.sql",
   "002_other_gifts.sql",
   "003_book_editions.sql",
+  "004_chile_edition_options.sql",
 ])
   await db.exec(
     await readFile(

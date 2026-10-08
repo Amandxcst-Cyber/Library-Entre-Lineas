@@ -139,3 +139,120 @@
     max-height: 320px;
   }
 }
+.edition-comparison,
+.edition-options-editor {
+  margin: 24px 0;
+  min-width: 0;
+}
+.edition-comparison h3 {
+  font-size: 1.55rem;
+  margin: 24px 0 12px;
+}
+.public-edition {
+  padding: 18px;
+  margin: 14px 0;
+  border: 1px solid #ddcdbf;
+  border-radius: 10px;
+  background: #fffaf4;
+  overflow-wrap: anywhere;
+}
+.preferred-edition {
+  border: 2px solid #6b2e47;
+  background: #f5ece2;
+}
+.public-edition h4 {
+  font-size: 1.05rem;
+  margin: 6px 0 14px;
+}
+.edition-badge {
+  color: #6b2e47;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.public-edition blockquote {
+  border-left: 3px solid #b48b54;
+  margin: 14px 0;
+  padding: 0 0 0 12px;
+}
+.public-edition cite {
+  font-size: 0.8rem;
+}
+.edition-specs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 0.85rem;
+}
+.edition-specs dt {
+  color: #775d50;
+  font-size: 0.78rem;
+}
+.edition-specs dd {
+  margin: 2px 0 0;
+}
+.public-edition summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.public-edition ul {
+  padding-left: 18px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.edition-store {
+  padding: 10px 0;
+  border-top: 1px solid #e7d8cc;
+  font-size: 0.85rem;
+}
+.edition-store a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+}
+.edition-store small {
+  display: block;
+  color: #775d50;
+}
+.edition-price {
+  color: #6b2e47;
+  font-size: 0.9rem;
+}
+.edition-footnote,
+.edition-market {
+  font-size: 0.78rem;
+  color: #775d50;
+  line-height: 1.6;
+}
+.edition-alternative-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.edition-alternative-heading img {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.edition-options-editor textarea {
+  width: 100%;
+  margin: 8px 0 16px;
+  min-height: 80px;
+}
+.edition-options-editor label {
+  font-size: 0.85rem;
+  display: block;
+}
+.edition-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.edition-add {
+  margin: 6px 12px;
+  min-height: 44px;
+}

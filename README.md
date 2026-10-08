@@ -1,12 +1,12 @@
 # Amanda entre líneas
 
-> **Buscador automático de libros:** autocompletado y oferta de Contrapunto verificados con fuentes reales; las otras tres tiendas bloquearon la consulta automática. Amanda confirmó la ejecución de la migración 003 el 8 de octubre de 2026. Esta actualización está preparada para `main`; el despliegue y el guardado con su cuenta real deben comprobarse. Consulta [el alcance, las pruebas y los pasos de publicación](docs/AUTOMATIZACION_LIBROS.md).
+> **Ediciones y compras en Chile:** nueva mejora en `feature/chile-edition-comparison`, comprobada localmente: búsqueda en español, favorita primero y alternativas con sus datos y precios. Requiere migración 004 antes de publicar. [Uso, alcance y primer paso](docs/EDICIONES_CHILE.md). El buscador anterior de main funciona según confirmación de Amanda; las consultas automáticas de tiendas tienen cobertura limitada.
 
 La wishlist personal de Amanda (@amandxcst), con libros como protagonistas, una biblioteca privada, vaquitas para sueños lectores y un estante de otros regalitos.
 
 Esta versión es una aplicación independiente: se puede alojar en Vercel y usar con un dominio propio. Las visitas no necesitan cuenta. Amanda entra con correo y contraseña en `/login`; la aplicación no usa autenticación de ChatGPT.
 
-La versión original ya fue desplegada en `library-entre-lineas.vercel.app`, según las capturas aportadas por Amanda, quien confirmó que pudo iniciar sesión. Esta actualización agrega una mejora comprobada localmente y con fuentes externas con cobertura limitada. La migración real fue confirmada por Amanda; la verificación del nuevo despliegue sigue pendiente. No contiene credenciales ni acredita una prueba completa de producción.
+La versión original ya fue desplegada en `library-entre-lineas.vercel.app`, según las capturas aportadas por Amanda, quien confirmó que pudo iniciar sesión. Esta actualización agrega una mejora comprobada localmente y con fuentes externas con cobertura limitada. La migración real fue confirmada por Amanda; Amanda confirmó también que el buscador publicado funciona. La nueva comparación pública de variantes todavía no está desplegada. No contiene credenciales ni acredita una prueba completa de producción.
 
 ## Qué incluye
 

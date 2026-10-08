@@ -47,8 +47,8 @@ const second = {
   ...first,
   id: "mock-english",
   isbn: "9780141439600",
-  language: "en",
-  format: "Paperback",
+  language: "es",
+  format: "Tapa blanda",
   publisher: "Editorial de ejemplo 2",
 };
 const errors = [];
@@ -103,20 +103,21 @@ try {
     }
     await r.fulfill({ json: { editions: [first, second], partial: false } });
   });
-  await page.route("**/api/book-prices?*", (r) =>
-    r.fulfill({
+  await page.route("**/api/book-prices?*", (r) => {
+    const requestedIsbn = new URL(r.request().url()).searchParams.get("isbn");
+    return r.fulfill({
       json: {
         isbn: new URL(r.request().url()).searchParams.get("isbn"),
         stores: [
           {
-            store: "Antártica (simulada)",
+            store: "Antártica",
             status: "verified",
             searchUrl: "https://www.antartica.cl/",
             offers: [
               {
                 store: "Antártica",
-                isbn: first.isbn,
-                price: 15990,
+                isbn: requestedIsbn,
+                price: requestedIsbn === first.isbn ? 15990 : 9990,
                 url: "https://www.antartica.cl/products/prueba",
                 available: true,
                 checkedAt: "2026-10-08T12:00:00Z",
@@ -124,15 +125,15 @@ try {
             ],
           },
           {
-            store: "Buscalibre (simulada)",
+            store: "Buscalibre",
             status: "blocked",
             searchUrl: "https://www.buscalibre.cl/",
             offers: [],
           },
         ],
       },
-    }),
-  );
+    });
+  });
   await page.goto(origin + "/login");
   await page.getByLabel("Correo", { exact: true }).fill("owner@example.test");
   await page
@@ -165,7 +166,21 @@ try {
     await dialog.getByLabel("Autor *", { exact: true }).inputValue(),
     "Autora de ejemplo",
   );
+  await dialog
+    .getByRole("button", { name: "Agregar como alternativa", exact: true })
+    .click();
+  await dialog
+    .getByLabel("Por qué elegí esta versión", { exact: false })
+    .fill("Me hace ilusión esta edición para mi colección.");
+  await dialog
+    .getByLabel("Ilustraciones y contenido adicional de mi edición")
+    .fill("Prólogo comprobado por Amanda.");
   await dialog.getByRole("button", { name: "Usar este precio y link" }).click();
+  await dialog
+    .getByRole("region", { name: "Alternativas que verán las visitas" })
+    .getByText("$9.990 CLP", { exact: false })
+    .first()
+    .waitFor();
   assert.equal(
     await dialog.getByLabel("Precio aproximado (CLP)").inputValue(),
     "15990",
@@ -228,6 +243,52 @@ try {
   assert.equal(saved.author, first.author);
   assert.equal(saved.price, 15990);
   assert.equal(saved.page_count, 320);
+  assert.equal(saved.edition_options.length, 2);
+  assert.equal(
+    saved.edition_note,
+    "Me hace ilusión esta edición para mi colección.",
+  );
+  const visitor = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
+  const publicPage = await visitor.newPage();
+  await publicPage.route("https://covers.openlibrary.org/**", (r) => r.abort());
+  await publicPage.goto(origin);
+  await publicPage
+    .getByRole("button", { name: "Detalles de " + first.title })
+    .click();
+  const comparison = publicPage.getByRole("region", {
+    name: "Ediciones y compras en Chile",
+  });
+  await comparison.getByText("Mi edición elegida · primera opción").waitFor();
+  assert.equal(
+    await comparison.locator("article").first().getAttribute("data-preferred"),
+    "true",
+  );
+  assert.ok(
+    (await comparison.locator("article").first().textContent()).includes(
+      "15.990",
+    ),
+  );
+  assert.ok(
+    (await comparison.locator("[data-alternative]").textContent()).includes(
+      "9.990",
+    ),
+  );
+  assert.ok((await comparison.textContent()).includes(saved.edition_note));
+  for (const width of [360, 390, 768, 1440]) {
+    await publicPage.setViewportSize({ width, height: 1000 });
+    assert.ok(
+      await publicPage.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await comparison.getByRole("heading").first().scrollIntoViewIfNeeded();
+    await publicPage.screenshot({
+      path: artifactDir + "/comparacion-publica-" + width + ".png",
+    });
+  }
+  await visitor.close();
   assert.equal(
     (
       await context.request.delete(origin + "/api/books/" + saved.id, {
@@ -270,6 +331,8 @@ try {
           "Autocompletado de edición",
           "Comparación con stock y fuente bloqueada",
           "Datos persistidos por API/SQL",
+          "Alternativas y precios por ISBN guardados",
+          "Favorita y motivo primero ante una alternativa más barata",
           "Edición manual tras fallo",
           "Sin desbordamiento móvil/tablet/escritorio",
         ],

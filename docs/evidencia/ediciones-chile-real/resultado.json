@@ -1,0 +1,73 @@
+{
+  "checkedAt": "2026-10-08T19:17:23.723Z",
+  "catalog": {
+    "editions": [
+      {
+        "id": "contrapunto:9789566180777",
+        "title": "Orgullo y prejuicio [Ed. Limitada cantos pintados]",
+        "author": "Jane Austen",
+        "isbn": "9789566180777",
+        "publisher": "Austral",
+        "year": null,
+        "language": "Español",
+        "format": "Tapa dura",
+        "translator": "",
+        "pages": 352,
+        "cover": "https://contrapunto.cl/cdn/shop/files/9789566180777.png?v=1786759992&width=1920",
+        "description": "Edición conmemorativa del 250 aniversario del nacimiento de la autora. La novela más aclamada de Jane Austen. Un retrato portentoso de la Inglaterra victoriana. Edición especial con cantos decorados.Con la llegada del rico y apuesto señor Darcy a su región, la vida de los Bennet y sus cinco hijas se vuelve del revés. El orgullo y la distancia social, la astucia y la hipocresía, los malentendidos y los juicios apresurados abocan a los personajes al escándalo y al dolor, pero también a la comprensión, el conocimiento y el amor verdadero.",
+        "source": "Contrapunto",
+        "sourceUrl": "https://contrapunto.cl/products/orgullo-y-prejuicio-ed-limitada-cantos-pintados"
+      }
+    ],
+    "partial": true
+  },
+  "comparison": {
+    "isbn": "9789566180777",
+    "stores": [
+      {
+        "store": "Penguin Libros",
+        "searchUrl": "https://www.penguinlibros.com/cl/busqueda?controller=search&s=9789566180777",
+        "status": "blocked",
+        "offers": []
+      },
+      {
+        "store": "Antártica",
+        "searchUrl": "https://www.antartica.cl/catalogsearch/result/?q=9789566180777",
+        "status": "blocked",
+        "offers": []
+      },
+      {
+        "store": "Buscalibre",
+        "searchUrl": "https://www.buscalibre.cl/libros/search?q=9789566180777",
+        "status": "blocked",
+        "offers": []
+      },
+      {
+        "store": "Contrapunto",
+        "searchUrl": "https://contrapunto.cl/search?q=9789566180777&type=product",
+        "status": "verified",
+        "offers": [
+          {
+            "store": "Contrapunto",
+            "isbn": "9789566180777",
+            "price": 13930,
+            "url": "https://contrapunto.cl/products/orgullo-y-prejuicio-ed-limitada-cantos-pintados?variant=43032890245195",
+            "available": true,
+            "checkedAt": "2026-10-08T19:17:17.820Z"
+          }
+        ]
+      }
+    ]
+  },
+  "checks": [
+    "Metadatos externos reales",
+    "ISBN exacto",
+    "Autor y portada reales",
+    "Oferta real copiada al formulario",
+    "Etiqueta de cobertura limitada",
+    "Sin desbordamiento móvil",
+    "Sin cambios en libros de la base"
+  ],
+  "authAndDatabase": "fixture aislada; no Supabase real",
+  "consoleErrors": []
+}

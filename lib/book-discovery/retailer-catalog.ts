@@ -96,7 +96,7 @@ export async function searchContrapunto(
   permitted(search.href);
   const html = await sourceText(search.href, hosts, fetcher);
   if (!/<html[\s>]/i.test(html)) throw new SourceError("unavailable");
-  const links = productLinks(html, search.href, hosts).slice(0, 3);
+  const links = productLinks(html, search.href, hosts).slice(0, 6);
   const results = await Promise.allSettled(
     links.map(async (url) => {
       permitted(url);

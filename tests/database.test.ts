@@ -106,6 +106,15 @@ test("Permisos, biblioteca, reservas y vaquitas", async (t) => {
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/004_chile_edition_options.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     await t.test(
       "La migración de ediciones conserva libros, reservas y RLS",
       async () => {
@@ -143,6 +152,58 @@ test("Permisos, biblioteca, reservas y vaquitas", async (t) => {
           0,
         );
         await context("super");
+      },
+    );
+    await t.test(
+      "Las alternativas públicas conservan privacidad y solo Amanda las modifica",
+      async () => {
+        await context("authenticated", owner);
+        await db.query(
+          "update public.books set edition_note='Mi edición elegida', edition_options=$2::jsonb where id=$1",
+          [books[10], JSON.stringify([{ edition: { isbn: "9780141439518" } }])],
+        );
+        await db.query(
+          "update public.books set edition_note='Mi edición privada' where id=$1",
+          [privateBook],
+        );
+        await context("anon");
+        const rows = await db.query<{
+          value: {
+            id: string;
+            edition_note: string;
+            edition_options: unknown[];
+          };
+        }>("select public.get_wishlist_books() as value");
+        assert.equal(
+          rows.rows.find((r) => r.value.id === books[10])?.value.edition_note,
+          "Mi edición elegida",
+        );
+        assert.equal(
+          rows.rows.find((r) => r.value.id === books[10])?.value.edition_options
+            .length,
+          1,
+        );
+        assert.equal(
+          rows.rows.some((r) => r.value.id === privateBook),
+          false,
+        );
+        await context("authenticated", stranger);
+        assert.equal(
+          await value<number>(
+            "with changed as (update public.books set edition_note='Ajena' returning id) select count(*)::int as value from changed",
+          ),
+          0,
+        );
+        await context("authenticated", owner);
+        await fails(
+          db.query(
+            "update public.books set edition_options='{}'::jsonb where id=$1",
+            [books[10]],
+          ),
+          "23514",
+        );
+        await context("super");
+        assert.equal((await state(books[11], hash("9"))).reserved, true);
       },
     );
     const gifts = giftRows

@@ -1,12 +1,12 @@
 # Búsqueda de libros y comparación de ediciones
 
-**Estado: implementada; autocompletado y oferta de Contrapunto comprobados con fuentes reales el 8 de octubre de 2026. Migración 003 ejecutada según confirmación de Amanda el 8 de octubre de 2026; pendiente de verificar el despliegue y el uso con su cuenta real.**
+**Estado: implementada; autocompletado y oferta de Contrapunto comprobados con fuentes reales el 8 de octubre de 2026. Migración 003 ejecutada según confirmación de Amanda el 8 de octubre de 2026; despliegue correcto y buscador funcionando según capturas y confirmación posterior de Amanda.**
 
 La rama `feature/book-discovery` parte de la versión original que está publicada. El rediseño anterior queda separado. Esta mejora conserva la única propietaria, RLS, las reservas de 7/14 días, el bucket privado y los enlaces externos de vaquitas.
 
 ## Flujo
 
-1. Amanda escribe un título o ISBN en **Agregar libro**. Tras una pausa breve, se consultan Google Books, Open Library y fichas públicas de Contrapunto. La búsqueda por ISBN usa la edición exacta de Open Library; sus colaboradores no se toman de otras ediciones de la obra. Las ediciones que indican español aparecen primero.
+1. Amanda escribe un título o ISBN en **Agregar libro**. Tras una pausa breve, se consultan Google Books, Open Library y fichas públicas de Contrapunto. La búsqueda por ISBN usa la edición exacta de Open Library; sus colaboradores no se toman de otras ediciones de la obra. La mejora siguiente limita los resultados a ediciones identificadas en español: [ediciones y compras en Chile](EDICIONES_CHILE.md).
 2. Se muestran fichas de ediciones con autor, portada, editorial, año, idioma, formato, traducción y páginas cuando la fuente los proporciona. Amanda elige la edición; los campos se completan y siguen siendo editables. No se adivina la saga o una categoría de su lista personal.
 3. Elegir una edición con ISBN inicia la consulta de precios. Solo se aceptan datos estructurados con ISBN coincidente, moneda CLP y precio entero. Tapa dura, bolsillo y traducciones con distintos ISBN no se mezclan.
 4. Se muestran librería, stock declarado, fecha de consulta y enlace. **Usar este precio y link** copia una oferta al formulario; no realiza una compra. Las ofertas sin stock confirmado no se declaran como la más económica disponible.
@@ -111,3 +111,8 @@ En la prueba real, solo se transportan las portadas reales a Chromium mediante e
 4. Comprobar que la wishlist, biblioteca, otros regalos y vaquitas conservan sus datos. Las pruebas de reservas no deben crear compromisos reales en producción.
 
 Un resultado exitoso de compilación local o un push a GitHub no confirma que Vercel terminó de publicar. Si falla el despliegue, revisar el error exacto del build; no volver a ejecutar migraciones que ya terminaron correctamente.
+
+
+## Comparación pública de variantes
+
+La nueva rama `feature/chile-edition-comparison` conserva esta implementación y agrega edición favorita, motivo, extras y alternativas con instantáneas de precios por ISBN. **La migración 004 está pendiente en Supabase real.** El primer paso y la verificación están en [EDICIONES_CHILE.md](EDICIONES_CHILE.md). La publicación histórica descrita arriba corresponde al buscador anterior, que Amanda ya confirmó funcionando.

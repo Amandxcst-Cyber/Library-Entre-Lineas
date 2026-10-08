@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: Context) {
     const current = await getBook(id);
     if (!current)
       throw new HttpError(404, "Ese libro ya no está en la biblioteca.");
-    const patch = bookSchema.partial().parse(await readJson(request));
+    const patch = bookSchema.partial().parse(await readJson(request, 100000));
     const data = bookSchema.parse({
       ...Object.fromEntries(
         Object.keys(bookSchema.shape).map((key) => [

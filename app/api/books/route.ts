@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   try {
     await authorizeOwner();
     checkOrigin(request);
-    const book = bookSchema.parse(await readJson(request)),
+    const book = bookSchema.parse(await readJson(request, 100000)),
       settings = await getSettings();
     if (
       !settings.priorities.some((p) => p.id === book.priority) ||

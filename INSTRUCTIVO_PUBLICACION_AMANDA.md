@@ -1,6 +1,6 @@
 # Amanda entre líneas · Instructivo de publicación
 
-> **Actualización del buscador automático:** fuentes reales comprobadas con cobertura limitada y migración 003 ejecutada según confirmación de Amanda el 8 de octubre de 2026. Se incorpora el código desde `feature/book-discovery` a `main`; queda verificar que Vercel publique el cambio y probar con la cuenta real. No repetir 001, 002 ni 003 en la base ya configurada. Consulta [la guía de la mejora y su evidencia](docs/AUTOMATIZACION_LIBROS.md). Los pasos siguientes son referencia para una instalación nueva.
+> **Ediciones y compras en Chile:** mejora local en `feature/chile-edition-comparison`; el siguiente paso es ejecutar solamente la migración 004, una vez. Main y el buscador anterior funcionan según confirmación de Amanda. No repetir 001, 002 ni 003 en la base ya configurada. [Guía del cambio y verificación](docs/EDICIONES_CHILE.md). Los pasos siguientes son referencia para una instalación nueva.
 
 Esta guía corresponde al proyecto **amanda-entre-lineas-independiente.zip**, versión 1.1.0: libros, otros regalitos y vaquitas. Al terminar tendrás una dirección pública para Instagram y un acceso privado con tu correo y contraseña. La publicación se hace en tus propias cuentas.
 

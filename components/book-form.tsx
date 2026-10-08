@@ -8,7 +8,20 @@ import SelectField from "./select-field";
 import { Book, Settings, STATUS_LABELS } from "@/lib/types";
 import { bookSchema } from "@/lib/validation";
 import BookDiscovery from "./book-discovery";
-import { isbn13, type Edition, type Offer } from "@/lib/book-discovery/shared";
+import {
+  bookEdition,
+  compactEdition,
+  EditionOptionsEditor,
+} from "./edition-options";
+import {
+  isbn13,
+  type Edition,
+  type Offer,
+  type Comparison,
+  type EditionOption,
+  spanish,
+  sameWork,
+} from "@/lib/book-discovery/shared";
 export type BookInput = Omit<Book, "id" | "created_at" | "updated_at">;
 export async function api<T>(
   url: string,
@@ -69,6 +82,9 @@ export default function BookForm({
           language: "",
           translator: "",
           page_count: null,
+          edition_note: "",
+          edition_extras: "",
+          edition_options: [],
         },
   );
   const [price, setPrice] = useState(book?.price?.toString() || ""),
@@ -91,6 +107,24 @@ export default function BookForm({
       language: edition.language,
       translator: edition.translator,
       page_count: edition.pages,
+      edition_note: d.isbn === edition.isbn ? d.edition_note : "",
+      edition_extras: d.isbn === edition.isbn ? d.edition_extras : "",
+      edition_options: edition.isbn
+        ? [
+            {
+              edition: compactEdition(edition),
+              comparison:
+                d.edition_options.find((o) => o.edition.isbn === edition.isbn)
+                  ?.comparison || null,
+              extras: "",
+              note: "",
+            },
+            ...d.edition_options.filter(
+              (o) =>
+                o.edition.isbn !== edition.isbn && sameWork(o.edition, edition),
+            ),
+          ].slice(0, 5)
+        : d.edition_options,
       price: null,
       purchase_url: "",
     }));
@@ -102,6 +136,78 @@ export default function BookForm({
     setPrice(String(offer.price));
     setData((d) => ({ ...d, price: offer.price, purchase_url: offer.url }));
     toast.success("Precio y enlace de esta edición seleccionados.");
+  }
+  function addAlternative(edition: Edition, confirmedSameWork = false) {
+    if (!data.isbn || !spanish(data.language)) {
+      toast.error("Elige primero tu edición favorita en español, con ISBN.");
+      return;
+    }
+    if (!confirmedSameWork && !sameWork(bookEdition(data), edition)) {
+      toast(
+        "Las fichas tienen distinto título o autor. Confirma que es el mismo libro y tomo antes de agregarlas.",
+        {
+          duration: 12000,
+          action: {
+            label: "Es el mismo tomo",
+            onClick: () => addAlternative(edition, true),
+          },
+        },
+      );
+      return;
+    }
+    if (data.edition_options.some((o) => o.edition.isbn === edition.isbn)) {
+      toast.info("Esta edición ya está incluida.");
+      return;
+    }
+    if (data.edition_options.length >= 5) {
+      toast.error("Puedes mostrar tu favorita y hasta cuatro alternativas.");
+      return;
+    }
+    setData((d) =>
+      d.isbn !== data.isbn ||
+      d.edition_options.some((o) => o.edition.isbn === edition.isbn) ||
+      d.edition_options.length >= 5
+        ? d
+        : {
+            ...d,
+            edition_options: [
+              ...d.edition_options,
+              {
+                edition: compactEdition(edition),
+                comparison: null,
+                extras: "",
+                note: "",
+              },
+            ],
+          },
+    );
+    toast.success("Alternativa agregada. Se consultarán sus precios en Chile.");
+  }
+  function changeOption(isbn: string, patch: Partial<EditionOption> | null) {
+    setData((d) => ({
+      ...d,
+      edition_options: patch
+        ? d.edition_options.map((o) =>
+            o.edition.isbn === isbn ? { ...o, ...patch } : o,
+          )
+        : d.edition_options.filter((o) => o.edition.isbn !== isbn),
+    }));
+  }
+  function saveComparison(comparison: Comparison) {
+    setData((d) => {
+      if (comparison.isbn !== isbn13(d.isbn)) return d;
+      const edition = compactEdition(bookEdition(d));
+      if (!spanish(edition.language)) return d;
+      return {
+        ...d,
+        edition_options: [
+          { edition, comparison, extras: "", note: "" },
+          ...d.edition_options.filter(
+            (o) => o.edition.isbn !== comparison.isbn,
+          ),
+        ].slice(0, 5),
+      };
+    });
   }
   async function upload(file: File | undefined) {
     if (!file) return;
@@ -131,6 +237,11 @@ export default function BookForm({
     setError("");
     const parsed = bookSchema.safeParse({
       ...data,
+      edition_options: data.edition_options.map((o) =>
+        o.edition.isbn === data.isbn
+          ? { ...o, note: data.edition_note, extras: data.edition_extras }
+          : o,
+      ),
       price: price.trim() === "" ? null : Number(price),
     });
     if (!parsed.success) {
@@ -190,6 +301,38 @@ export default function BookForm({
           initialIsbn={data.isbn}
           onEdition={useEdition}
           onOffer={useOffer}
+          onAlternative={addAlternative}
+          onComparison={saveComparison}
+        />
+        <div className="field">
+          <label htmlFor="edition-preferred-note">
+            Por qué elegí esta versión{" "}
+            <span className="public-label">Mi recomendación pública</span>
+          </label>
+          <textarea
+            id="edition-preferred-note"
+            value={data.edition_note}
+            onChange={(e) => set("edition_note", e.target.value)}
+            maxLength={1000}
+            placeholder="Ej.: prefiero la edición ilustrada porque sus imágenes me hacen ilusión."
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="edition-preferred-extras">
+            Ilustraciones y contenido adicional de mi edición
+          </label>
+          <textarea
+            id="edition-preferred-extras"
+            value={data.edition_extras}
+            onChange={(e) => set("edition_extras", e.target.value)}
+            maxLength={1000}
+            placeholder="Anota los extras que comprobaste: ilustraciones, prólogo, capítulos adicionales…"
+          />
+        </div>
+        <EditionOptionsEditor
+          options={data.edition_options}
+          preferredIsbn={data.isbn}
+          onChange={changeOption}
         />
         <div className="cover-editor">
           <div className="small-cover">
