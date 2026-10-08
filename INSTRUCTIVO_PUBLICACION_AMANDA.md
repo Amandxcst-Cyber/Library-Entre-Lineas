@@ -1,6 +1,6 @@
 # Amanda entre líneas · Instructivo de publicación
 
-> **Ediciones y compras en Chile:** mejora local en `feature/chile-edition-comparison`; el siguiente paso es ejecutar solamente la migración 004, una vez. Main y el buscador anterior funcionan según confirmación de Amanda. No repetir 001, 002 ni 003 en la base ya configurada. [Guía del cambio y verificación](docs/EDICIONES_CHILE.md). Los pasos siguientes son referencia para una instalación nueva.
+> **Ediciones y compras en Chile:** mejora comprobada localmente e incorporada a `main` tras confirmar Amanda la migración 004. El siguiente paso es verificar el nuevo despliegue Ready en Vercel. Main y el buscador anterior funcionan según confirmación de Amanda. No repetir 001, 002, 003 ni 004 en la base ya configurada. [Guía del cambio y verificación](docs/EDICIONES_CHILE.md). Los pasos siguientes son referencia para una instalación nueva.
 
 Esta guía corresponde al proyecto **amanda-entre-lineas-independiente.zip**, versión 1.1.0: libros, otros regalitos y vaquitas. Al terminar tendrás una dirección pública para Instagram y un acceso privado con tu correo y contraseña. La publicación se hace en tus propias cuentas.
 

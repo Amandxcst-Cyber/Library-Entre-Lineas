@@ -1,6 +1,6 @@
 # Edición favorita, alternativas y compras en Chile
 
-Implementado y comprobado localmente el 8 de octubre de 2026. Preparado en `feature/chile-edition-comparison`; **requiere ejecutar la migración 004 antes de incorporarlo a main**. La búsqueda anterior publicada en main funciona según la confirmación de Amanda y sus capturas de Vercel. No se ha ejecutado la 004 en su Supabase real desde este entorno.
+Implementado y comprobado localmente el 8 de octubre de 2026. Código incorporado a `main` desde `feature/chile-edition-comparison` tras la confirmación de Amanda de que la migración 004 terminó correctamente en Supabase. Amanda confirmó la ejecución y una consulta anónima de solo lectura a las tres columnas nuevas (`select=edition_note,edition_extras,edition_options&limit=0`) respondió HTTP 200. No se realizaron escrituras ni se probó su cuenta real desde este entorno. La búsqueda anterior publicada ya funcionaba según sus capturas y confirmación. Pendiente: verificar que Vercel publique esta actualización y probar el guardado de alternativas con su cuenta real.
 
 ## Cómo se usa
 
@@ -28,9 +28,9 @@ Consulta real de “Boulevard”: se obtuvieron los libros 1, 2 y 3 de Montena e
 
 ## Publicación: un paso a la vez
 
-**Primer paso pendiente:** abrir `supabase/migrations/004_chile_edition_options.sql` en esta rama, copiar su contenido al SQL Editor del Supabase existente y ejecutarlo una sola vez. No repetir 001, 002 ni 003. La 004 fue probada contra una base poblada con una reserva activa; eso no acredita su ejecución en producción.
+**Completado según confirmación de Amanda:** migración `004_chile_edition_options.sql` ejecutada correctamente en su Supabase existente. No repetir 001, 002, 003 ni 004 en esa base. La prueba local verificó conservación de libros y una reserva activa; Amanda confirmó la ejecución real y se verificó por lectura que las tres columnas existen en la API de Supabase.
 
-Después de confirmar el resultado, incorporar esta rama a main y esperar el despliegue Ready. Verificar con la cuenta real: elegir favorita, agregar una alternativa del mismo libro, guardar, y abrir la ficha en una ventana sin sesión. No usar la Preview de esta rama para guardar contra la base real antes de aplicar 004. No requiere nuevas variables ni una clave de IA.
+El código se incorpora a main. **Siguiente paso:** comprobar que el nuevo despliegue de Vercel termina en Ready. Verificar con la cuenta real: elegir favorita, agregar una alternativa del mismo libro, guardar, y abrir la ficha en una ventana sin sesión. Las pruebas automáticas usan exclusivamente la base aislada. No requiere nuevas variables ni una clave de IA.
 
 ## Verificación
 
